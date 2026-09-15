@@ -1,0 +1,3089 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
+  <meta name="description" content="アイカツ！のカード収集・所持状況のチェック、交換募集テキストの作成ができる高機能Webアプリ。">
+  <title>アイカツ！カードチェッカー - Aikatsu! Card Checklist & Trade</title>
+
+  <!-- Google Fonts: M PLUS Rounded 1c & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800;900&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    /* ==========================================================
+       CSS Variables & Design Tokens
+       ========================================================== */
+    :root {
+      --font-main: 'M PLUS Rounded 1c', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-code: 'Outfit', sans-serif;
+
+      /* Primary Brand Colors — aligned with the official "Aikatsu! Encore"
+         theme color (#fb9fd6) while keeping enough contrast for UI text */
+      --primary: #ef4fa8;
+      --primary-hover: #d6348c;
+      --primary-light: #fde6f4;
+      --primary-gradient: linear-gradient(135deg, #ef4fa8 0%, #fb9fd6 55%, #c8a2f0 100%);
+      --accent-star: #ffb300;
+      --accent-star-bg: #fff8e1;
+
+      /* Status Colors */
+      --status-have: #00b0ff;
+      --status-have-bg: #e1f5fe;
+      --status-nothave: #f44336;
+      --status-nothave-bg: #ffebee;
+      --status-trade: #00c853;
+      --status-trade-bg: #e8f5e9;
+      --status-want: #ab47bc;
+      --status-want-bg: #f3e5f5;
+
+      /* Type Colors */
+      --type-cute: #ff4081;
+      --type-cute-bg: #fce4ec;
+      --type-cool: #2979ff;
+      --type-cool-bg: #e3f2fd;
+      --type-sexy: #aa00ff;
+      --type-sexy-bg: #f3e5f5;
+      --type-pop: #ff9100;
+      --type-pop-bg: #fff3e0;
+
+      /* Light Theme Defaults */
+      --bg-base: #f9f8fc;
+      --bg-surface: #ffffff;
+      --bg-surface-elevated: #ffffff;
+      --bg-sidebar: #ffffff;
+      --text-main: #2d264b;
+      --text-muted: #6b6480;
+      --border-color: #ede7f6;
+      --border-subtle: #f3e8f5;
+      --card-shadow: 0 4px 16px rgba(103, 58, 183, 0.08);
+      --card-shadow-hover: 0 10px 24px rgba(239, 79, 168, 0.16);
+      --glow-active: rgba(239, 79, 168, 0.25);
+      --glass-bg: rgba(255, 255, 255, 0.88);
+      --glass-border: rgba(255, 255, 255, 0.6);
+
+      --sidebar-width: 260px;
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --transition-smooth: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Dark Theme */
+    [data-theme="dark"] {
+      --bg-base: #14121e;
+      --bg-surface: #1e1b2e;
+      --bg-surface-elevated: #28243d;
+      --bg-sidebar: #191626;
+      --text-main: #f0eef7;
+      --text-muted: #9e96b8;
+      --border-color: #342f4c;
+      --border-subtle: #29243c;
+      --card-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+      --card-shadow-hover: 0 10px 24px rgba(239, 79, 168, 0.3);
+      --glass-bg: rgba(30, 27, 46, 0.88);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --primary-light: #3d1b32;
+      --status-have-bg: #0d2838;
+      --status-nothave-bg: #381518;
+      --status-trade-bg: #0c3319;
+      --status-want-bg: #32163b;
+      --type-cute-bg: #3d1b32;
+      --type-cool-bg: #10263f;
+      --type-sexy-bg: #2d103b;
+      --type-pop-bg: #3d2a0d;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-main);
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      min-height: 100vh;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.5;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    /* ==========================================================
+       Header Styles
+       ========================================================== */
+    .app-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      background: var(--glass-bg);
+      border-bottom: 1px solid var(--border-color);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+    }
+    .header-inner {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
+    }
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+      flex: 1 1 auto;
+    }
+    .mobile-menu-btn {
+      display: none;
+      background: none;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      color: var(--text-main);
+      padding: 8px;
+      cursor: pointer;
+      font-size: 1.2rem;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition-smooth);
+    }
+    .mobile-menu-btn:hover {
+      background: var(--primary-light);
+    }
+
+    .brand-logo-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      min-width: 0;
+      flex: 1 1 auto;
+    }
+    .brand-icon-star {
+      width: 36px;
+      height: 36px;
+      background: var(--primary-gradient);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 10px rgba(239, 79, 168, 0.35);
+      color: #fff;
+      font-size: 1.3rem;
+      transform: rotate(-5deg);
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .brand-logo-wrap:hover .brand-icon-star {
+      transform: rotate(10deg) scale(1.08);
+    }
+    .brand-text {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      flex: 1 1 auto;
+    }
+    .brand-title {
+      font-size: 1.15rem;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+      background: var(--primary-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 0;
+      max-width: 100%;
+    }
+    .brand-subtitle {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-main);
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: var(--transition-smooth);
+      white-space: nowrap;
+      user-select: none;
+    }
+    .btn-icon-only {
+      padding: 8px;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+    }
+    .btn-primary {
+      background: var(--primary-gradient);
+      color: #ffffff;
+      border: none;
+      box-shadow: 0 3px 10px rgba(239, 79, 168, 0.3);
+    }
+    .btn-primary:hover {
+      box-shadow: 0 5px 15px rgba(239, 79, 168, 0.45);
+      transform: translateY(-1px);
+    }
+    .btn-secondary {
+      background: var(--bg-surface-elevated);
+      color: var(--text-main);
+      border-color: var(--border-color);
+    }
+    .btn-secondary:hover {
+      background: var(--border-subtle);
+      border-color: var(--primary);
+    }
+    .btn-outline-primary {
+      background: var(--bg-surface);
+      color: var(--primary);
+      border: 1.5px solid var(--primary);
+    }
+    .btn-outline-primary:hover {
+      background: var(--primary-light);
+    }
+
+    /* ==========================================================
+       Main Layout Structure
+       ========================================================== */
+    .app-body {
+      flex: 1;
+      display: flex;
+      max-width: 1440px;
+      width: 100%;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    /* Sidebar */
+    .sidebar-wrapper {
+      width: var(--sidebar-width);
+      flex-shrink: 0;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      transition: var(--transition-smooth);
+    }
+    .sidebar-sticky {
+      position: sticky;
+      top: 60px;
+      padding: 20px 14px;
+      max-height: calc(100vh - 60px);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .sidebar-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 6px;
+    }
+    .sidebar-section-title {
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .series-nav-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .series-nav-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      border-radius: var(--radius-md);
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--text-main);
+      cursor: pointer;
+      border: 1px solid transparent;
+      background: transparent;
+      transition: var(--transition-smooth);
+    }
+    .series-nav-item:hover {
+      background: var(--primary-light);
+      color: var(--primary);
+      transform: translateX(3px);
+    }
+    .series-nav-item.active {
+      background: var(--primary-gradient);
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(239, 79, 168, 0.35);
+      border-color: transparent;
+    }
+    .series-nav-item-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      overflow: hidden;
+    }
+    .series-name-label {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .series-badge {
+      font-family: var(--font-code);
+      font-size: 0.72rem;
+      padding: 2px 7px;
+      border-radius: 20px;
+      background: rgba(0, 0, 0, 0.08);
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .series-nav-item.active .series-badge {
+      background: rgba(255, 255, 255, 0.3);
+      color: #fff;
+    }
+    .custom-series-tag {
+      font-size: 0.65rem;
+      padding: 1px 5px;
+      border-radius: 4px;
+      background: var(--accent-star);
+      color: #fff;
+      font-weight: 800;
+    }
+
+    .sidebar-footer-card {
+      padding: 14px;
+      background: var(--primary-light);
+      border-radius: var(--radius-md);
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      border: 1px dashed var(--primary);
+      text-align: center;
+      margin-top: auto;
+    }
+    .sidebar-footer-card strong {
+      color: var(--primary);
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    /* Backdrop for mobile drawer */
+    .sidebar-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(4px);
+      z-index: 90;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    /* Main Content Area */
+    .main-content {
+      flex: 1;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      min-width: 0;
+    }
+
+    /* ==========================================================
+       Dashboard & Progress Banner
+       ========================================================== */
+    .dashboard-panel {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      box-shadow: var(--card-shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+    .dashboard-panel::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: var(--primary-gradient);
+    }
+    .dash-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .current-series-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+      max-width: 100%;
+    }
+    .current-series-title {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--text-main);
+      min-width: 0;
+      overflow-wrap: break-word;
+    }
+    .current-series-tag {
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 20px;
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+    .series-actions-top {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Progress Bar */
+    .progress-container {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .progress-labels {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+    .progress-percent {
+      font-family: var(--font-code);
+      font-size: 1.1rem;
+      color: var(--primary);
+      font-weight: 800;
+    }
+    .progress-track {
+      height: 12px;
+      background: var(--border-subtle);
+      border-radius: 20px;
+      overflow: hidden;
+      position: relative;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--primary-gradient);
+      border-radius: 20px;
+      width: 0%;
+      transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 0 10px rgba(239, 79, 168, 0.5);
+    }
+
+    /* Stats Badges Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 10px;
+    }
+    .stat-chip {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: var(--radius-md);
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-color);
+      transition: var(--transition-smooth);
+    }
+    .stat-chip:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    }
+    .stat-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+    .stat-info {
+      display: flex;
+      flex-direction: column;
+    }
+    .stat-value {
+      font-family: var(--font-code);
+      font-size: 1.25rem;
+      font-weight: 800;
+      line-height: 1.1;
+    }
+    .stat-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .chip-have .stat-icon { background: var(--status-have-bg); color: var(--status-have); }
+    .chip-nothave .stat-icon { background: var(--status-nothave-bg); color: var(--status-nothave); }
+    .chip-want .stat-icon { background: var(--status-want-bg); color: var(--status-want); }
+    .chip-trade .stat-icon { background: var(--status-trade-bg); color: var(--status-trade); }
+
+    /* ==========================================================
+       Filter & Controls Toolbar
+       ========================================================== */
+    .toolbar-panel {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      box-shadow: var(--card-shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .toolbar-row-top {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    /* Search Box */
+    .search-box-wrap {
+      position: relative;
+      flex: 1;
+      min-width: 220px;
+    }
+    .search-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      pointer-events: none;
+    }
+    .search-input {
+      width: 100%;
+      padding: 10px 38px 10px 38px;
+      border: 1.5px solid var(--border-color);
+      border-radius: var(--radius-md);
+      background: var(--bg-surface-elevated);
+      color: var(--text-main);
+      font-family: var(--font-main);
+      font-size: 0.88rem;
+      outline: none;
+      transition: var(--transition-smooth);
+    }
+    .search-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--glow-active);
+    }
+    .search-clear-btn {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.85rem;
+      padding: 4px;
+      display: none;
+    }
+
+    /* Select Inputs */
+    .select-control {
+      padding: 10px 14px;
+      border-radius: var(--radius-md);
+      border: 1.5px solid var(--border-color);
+      background: var(--bg-surface-elevated);
+      color: var(--text-main);
+      font-family: var(--font-main);
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      outline: none;
+      transition: var(--transition-smooth);
+    }
+    .select-control:focus {
+      border-color: var(--primary);
+    }
+
+    /* Filter Chips (Status & Parts & Types) — stacked as grouped rows,
+       matching the official card list's sectioned search layout */
+    .filter-tabs-row {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .filter-pills-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    /* Grouping labels (mirrors the official card list's "タイプ / レアリティ /
+       カテゴリ" sectioned search layout) */
+    .filter-group-block {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .filter-group-label {
+      font-size: 0.72rem;
+      font-weight: 800;
+      color: var(--text-muted);
+      flex-shrink: 0;
+      min-width: 44px;
+    }
+    .filter-detail-heading {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.78rem;
+      font-weight: 800;
+      color: var(--primary);
+      margin-top: 4px;
+      padding-top: 10px;
+      border-top: 1px dashed var(--border-color);
+    }
+    .filter-pill {
+      border: 1px solid var(--border-color);
+      background: var(--bg-surface-elevated);
+      color: var(--text-muted);
+      padding: 6px 13px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: var(--transition-smooth);
+      user-select: none;
+    }
+    .filter-pill:hover {
+      background: var(--border-subtle);
+      color: var(--text-main);
+    }
+    .filter-pill.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+      box-shadow: 0 2px 8px rgba(239, 79, 168, 0.35);
+    }
+
+    .batch-actions-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: auto;
+    }
+
+    /* ==========================================================
+       Card Grid
+       ========================================================== */
+    .card-grid-container {
+      position: relative;
+      min-height: 200px;
+    }
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 16px;
+      align-content: start;
+    }
+
+    /* Individual Card */
+    .card-item {
+      background: var(--bg-surface);
+      border-radius: var(--radius-lg);
+      padding: 12px;
+      box-shadow: var(--card-shadow);
+      border: 1.5px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: var(--transition-smooth);
+      position: relative;
+      overflow: hidden;
+    }
+    .card-item:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--card-shadow-hover);
+      border-color: var(--primary);
+    }
+
+    /* State Accent Borders */
+    .card-item.is-have {
+      border-color: rgba(0, 176, 255, 0.4);
+    }
+    .card-item.is-nothave {
+      border-color: rgba(244, 67, 54, 0.4);
+    }
+    .card-item.is-want {
+      box-shadow: 0 0 0 1px var(--status-want), var(--card-shadow);
+    }
+
+    /* Image Wrapper */
+    .card-img-wrapper {
+      position: relative;
+      width: 100%;
+      height: 180px;
+      background: var(--bg-surface-elevated);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: zoom-in;
+    }
+    .card-img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .card-item:hover .card-img {
+      transform: scale(1.05);
+    }
+
+    .img-zoom-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      color: #fff;
+      font-size: 1.4rem;
+      transition: opacity 0.2s ease;
+    }
+    .card-img-wrapper:hover .img-zoom-overlay {
+      opacity: 1;
+    }
+
+    /* Badges in Card */
+    .card-badge-container {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      z-index: 2;
+    }
+    .card-part-badge {
+      font-size: 0.65rem;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 12px;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    }
+    .badge-tops { background: #ff4081; color: #fff; }
+    .badge-bottoms { background: #7c4dff; color: #fff; }
+    .badge-shoes { background: #00bcd4; color: #fff; }
+    .badge-accessory { background: #ff9800; color: #fff; }
+    .badge-tops-bottoms { background: #607d8b; color: #fff; }
+    .badge-unknown {
+      background: repeating-linear-gradient(45deg, #cfcfcf, #cfcfcf 6px, #bdbdbd 6px, #bdbdbd 12px);
+      color: #fff;
+    }
+
+    .card-type-badge {
+      font-size: 0.62rem;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 10px;
+      text-transform: uppercase;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+    .card-type-cute { background: var(--type-cute); color: #fff; }
+    .card-type-cool { background: var(--type-cool); color: #fff; }
+    .card-type-sexy { background: var(--type-sexy); color: #fff; }
+    .card-type-pop  { background: var(--type-pop);  color: #fff; }
+
+    /* Rarity Badge (top-right corner) */
+    .card-rarity-badge {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      z-index: 2;
+      font-family: var(--font-code);
+      font-size: 0.68rem;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 10px;
+      color: #fff;
+      letter-spacing: 0.5px;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    }
+    .rarity-pr { background: #ffb300; }
+    .rarity-r  { background: #ff4081; }
+    .rarity-n  { background: #9e96b8; }
+    .rarity-mc { background: #7c4dff; }
+    .rarity-cp { background: #00c853; }
+    .rarity-p  { background: #2979ff; }
+
+    /* Rarity filter pills — color-coded to match the badges above */
+    #rarityFilterGroup .filter-pill.active[data-filter-rarity="pr"] { background: #ffb300; border-color: #ffb300; box-shadow: 0 2px 8px rgba(255,179,0,0.35); }
+    #rarityFilterGroup .filter-pill.active[data-filter-rarity="r"]  { background: #ff4081; border-color: #ff4081; box-shadow: 0 2px 8px rgba(255,64,129,0.35); }
+    #rarityFilterGroup .filter-pill.active[data-filter-rarity="n"]  { background: #9e96b8; border-color: #9e96b8; box-shadow: none; }
+    #rarityFilterGroup .filter-pill.active[data-filter-rarity="mc"] { background: #7c4dff; border-color: #7c4dff; box-shadow: 0 2px 8px rgba(124,77,255,0.35); }
+    #rarityFilterGroup .filter-pill.active[data-filter-rarity="cp"] { background: #00c853; border-color: #00c853; box-shadow: 0 2px 8px rgba(0,200,83,0.35); }
+    #rarityFilterGroup .filter-pill.active[data-filter-rarity="p"]  { background: #2979ff; border-color: #2979ff; box-shadow: 0 2px 8px rgba(41,121,255,0.35); }
+
+    /* Type filter pills — color-coded to match each type's brand color */
+    #typeFilterGroup .filter-pill.active[data-filter-type="cute"] { background: var(--type-cute); border-color: var(--type-cute); box-shadow: 0 2px 8px rgba(255,64,129,0.35); }
+    #typeFilterGroup .filter-pill.active[data-filter-type="cool"] { background: var(--type-cool); border-color: var(--type-cool); box-shadow: 0 2px 8px rgba(41,121,255,0.35); }
+    #typeFilterGroup .filter-pill.active[data-filter-type="sexy"] { background: var(--type-sexy); border-color: var(--type-sexy); box-shadow: 0 2px 8px rgba(170,0,255,0.35); }
+    #typeFilterGroup .filter-pill.active[data-filter-type="pop"]  { background: var(--type-pop);  border-color: var(--type-pop);  box-shadow: 0 2px 8px rgba(255,145,0,0.35); }
+
+    /* Card Details */
+    .card-info {
+      margin: 10px 0 8px 0;
+      text-align: center;
+    }
+    .card-id-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-bottom: 2px;
+    }
+    .card-id {
+      font-family: var(--font-code);
+      font-size: 0.8rem;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: 0.5px;
+    }
+    .card-name {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-main);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      min-height: 2.4em;
+      line-height: 1.25;
+    }
+
+    /* Checkbox Group — compact horizontal chip row (keeps cards short) */
+    .check-group {
+      display: flex;
+      gap: 4px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border-color);
+    }
+    .check-btn-label {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 7px 2px;
+      border-radius: var(--radius-sm);
+      font-size: 0.72rem;
+      font-weight: 800;
+      cursor: pointer;
+      user-select: none;
+      transition: var(--transition-smooth);
+      background: var(--bg-surface-elevated);
+      border: 1.5px solid var(--border-color);
+      text-align: center;
+      white-space: nowrap;
+    }
+    .check-btn-label:hover {
+      border-color: currentColor;
+    }
+
+    /* The actual checkbox is visually hidden; the chip's own background
+       communicates checked/unchecked state (via .is-active) to save space. */
+    .check-btn-label input[type="checkbox"] {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    /* Label Colors */
+    .lbl-nothave { color: var(--status-nothave); }
+    .lbl-nothave.is-active { background: var(--status-nothave-bg); border-color: var(--status-nothave); }
+    .lbl-trade { color: var(--status-trade); }
+    .lbl-trade.is-active { background: var(--status-trade-bg); border-color: var(--status-trade); }
+    .lbl-want { color: var(--status-want); }
+    .lbl-want.is-active { background: var(--status-want-bg); border-color: var(--status-want); }
+    .lbl-star { color: #c98a00; }
+    .lbl-star.is-active { background: #fff3cd; border-color: #ffb300; }
+
+    /* Quantity Stepper (owned copies) */
+    .qty-stepper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 2px;
+      margin-top: 2px;
+      border-top: 1px solid var(--border-color);
+    }
+    .qty-stepper-label {
+      font-size: 0.72rem;
+      font-weight: 800;
+      color: var(--text-muted);
+      margin-right: auto;
+    }
+    .qty-btn {
+      width: 26px;
+      height: 26px;
+      flex-shrink: 0;
+      border-radius: 50%;
+      border: 1.5px solid var(--border-color);
+      background: var(--bg-surface-elevated);
+      color: var(--text-main);
+      font-weight: 900;
+      font-size: 1rem;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      transition: var(--transition-smooth);
+    }
+    .qty-btn:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+    .qty-btn:active {
+      transform: scale(0.9);
+    }
+    .qty-value {
+      min-width: 22px;
+      text-align: center;
+      font-weight: 900;
+      font-size: 0.95rem;
+      color: var(--text-main);
+    }
+
+    /* Empty state */
+    .empty-state {
+      grid-column: 1 / -1;
+      padding: 60px 20px;
+      text-align: center;
+      color: var(--text-muted);
+      background: var(--bg-surface);
+      border-radius: var(--radius-lg);
+      border: 2px dashed var(--border-color);
+    }
+    .empty-state-icon {
+      font-size: 3rem;
+      margin-bottom: 12px;
+      display: block;
+    }
+    .empty-state h3 {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-bottom: 6px;
+    }
+
+    /* ==========================================================
+       Modals (Zoom, Share, Backup, Add Series)
+       ========================================================== */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 8, 20, 0.7);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    .modal-backdrop.is-open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .modal-card {
+      background: var(--bg-surface);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border-color);
+      max-width: 560px;
+      width: 100%;
+      overflow: hidden;
+      transform: scale(0.95);
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      display: flex;
+      flex-direction: column;
+    }
+    .modal-backdrop.is-open .modal-card {
+      transform: scale(1);
+    }
+    .modal-header {
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .modal-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .modal-close-btn {
+      background: none;
+      border: none;
+      font-size: 1.3rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px;
+      line-height: 1;
+      border-radius: 50%;
+      transition: var(--transition-smooth);
+    }
+    .modal-close-btn:hover {
+      color: var(--primary);
+      background: var(--primary-light);
+    }
+    .modal-body {
+      padding: 20px;
+      overflow-y: auto;
+      max-height: 75vh;
+    }
+    .modal-footer {
+      padding: 14px 20px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      background: var(--bg-surface-elevated);
+    }
+
+    /* Image Preview Modal Specifics */
+    .preview-modal-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+    .preview-img-container {
+      width: 100%;
+      max-height: 380px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-surface-elevated);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      position: relative;
+    }
+    .preview-img {
+      max-width: 100%;
+      max-height: 380px;
+      object-fit: contain;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+    .preview-nav-btn {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(0, 0, 0, 0.4);
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      font-size: 1.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: var(--transition-smooth);
+    }
+    .preview-nav-btn:hover {
+      background: var(--primary);
+    }
+    .preview-prev { left: 10px; }
+    .preview-next { right: 10px; }
+    .preview-details {
+      text-align: center;
+      width: 100%;
+    }
+    .preview-card-id {
+      font-family: var(--font-code);
+      font-size: 1rem;
+      color: var(--primary);
+      font-weight: 800;
+    }
+    .preview-card-name {
+      font-size: 1.1rem;
+      font-weight: 800;
+      margin-top: 2px;
+    }
+
+    /* Textarea for Tweet Generator */
+    .tweet-textarea {
+      width: 100%;
+      height: 150px;
+      padding: 12px;
+      border-radius: var(--radius-md);
+      border: 1.5px solid var(--border-color);
+      background: var(--bg-surface-elevated);
+      color: var(--text-main);
+      font-family: var(--font-main);
+      font-size: 0.88rem;
+      resize: vertical;
+      outline: none;
+      transition: var(--transition-smooth);
+    }
+    .tweet-textarea:focus {
+      border-color: var(--primary);
+    }
+    .tweet-meta-info {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 6px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .share-text-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+    .share-text-actions .btn {
+      flex: 1;
+      min-width: 140px;
+    }
+
+    /* Image Share Section (Want List) */
+    .share-image-preview-wrap {
+      width: 100%;
+      min-height: 100px;
+      max-height: 360px;
+      overflow: auto;
+      border: 1.5px dashed var(--border-color);
+      border-radius: var(--radius-md);
+      background: var(--bg-surface-elevated);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 12px;
+    }
+    .share-image-preview {
+      max-width: 100%;
+      display: block;
+      border-radius: var(--radius-sm);
+    }
+    .share-image-empty {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      padding: 36px 20px;
+      text-align: center;
+    }
+    .share-image-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .share-image-actions .btn {
+      flex: 1;
+      min-width: 140px;
+    }
+    .share-image-actions .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: none;
+      pointer-events: none;
+    }
+
+    /* Toast Notifications */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      pointer-events: none;
+    }
+    .toast-msg {
+      background: var(--bg-surface-elevated);
+      color: var(--text-main);
+      padding: 12px 20px;
+      border-radius: var(--radius-md);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      border-left: 4px solid var(--primary);
+      border-top: 1px solid var(--border-color);
+      border-right: 1px solid var(--border-color);
+      border-bottom: 1px solid var(--border-color);
+      font-size: 0.88rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      pointer-events: auto;
+      transform: translateY(20px);
+      opacity: 0;
+      animation: toastIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+    @keyframes toastIn {
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .mobile-menu-btn {
+        display: inline-flex;
+      }
+      .sidebar-wrapper {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        z-index: 100;
+        transform: translateX(-100%);
+        box-shadow: 10px 0 30px rgba(0, 0, 0, 0.2);
+      }
+      .sidebar-wrapper.is-open {
+        transform: translateX(0);
+      }
+      .sidebar-backdrop.is-open {
+        display: block;
+        opacity: 1;
+        pointer-events: auto;
+      }
+      .main-content {
+        padding: 16px;
+      }
+      .card-grid {
+        grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+        gap: 12px;
+      }
+      .card-img-wrapper {
+        height: 150px;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .header-inner {
+        padding: 10px 14px;
+        gap: 8px;
+      }
+      .brand-subtitle {
+        display: none;
+      }
+      .brand-icon-star {
+        width: 30px;
+        height: 30px;
+        font-size: 1.05rem;
+        flex-shrink: 0;
+      }
+      .brand-title {
+        font-size: 1rem;
+      }
+      .btn span.btn-label-text {
+        display: none;
+      }
+      .btn-icon-only,
+      .header-actions .btn {
+        padding: 8px;
+        width: 36px;
+        height: 36px;
+      }
+      .batch-actions-group {
+        width: 100%;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+      }
+      .batch-actions-group .select-control {
+        flex: 1 1 auto;
+        min-width: 100px;
+      }
+      .batch-actions-group .btn {
+        flex: 1 1 auto;
+        padding: 8px 10px;
+        font-size: 0.78rem;
+      }
+      .stats-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+      .filter-group-block {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .filter-group-label {
+        min-width: 0;
+      }
+    }
+
+    @media (max-width: 360px) {
+      .brand-title {
+        font-size: 0.88rem;
+      }
+      .brand-icon-star {
+        width: 26px;
+        height: 26px;
+        font-size: 0.9rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ========================================================
+       Header
+       ======================================================== -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand-section">
+        <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="メニューを開く">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+        </button>
+        <div class="brand-logo-wrap">
+          <div class="brand-icon-star">★</div>
+          <div class="brand-text">
+            <h1 class="brand-title">アイカツ！カードチェッカー</h1>
+            <span class="brand-subtitle">AIKATSU! CARD COLLECTION & TRADE MANAGER</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <!-- Twitter/X Share Generator -->
+        <button class="btn btn-primary" id="openShareModalBtn" title="交換募集文を作成">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+          <span class="btn-label-text">交換募集文</span>
+        </button>
+
+        <!-- Data Backup & Restore -->
+        <button class="btn btn-secondary btn-icon-only" id="openBackupModalBtn" title="データの保存・復元">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+        </button>
+
+        <!-- Theme Toggle -->
+        <button class="btn btn-secondary btn-icon-only" id="themeToggleBtn" title="テーマ切り替え">
+          <span id="themeIcon">🌙</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile Drawer Backdrop -->
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+  <!-- ========================================================
+       App Body Layout
+       ======================================================== -->
+  <div class="app-body">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar-wrapper" id="sidebar">
+      <div class="sidebar-sticky">
+        <div class="sidebar-header-row">
+          <div class="sidebar-section-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+            シリーズ選択
+          </div>
+        </div>
+
+        <ul class="series-nav-list" id="seriesNavList">
+          <!-- Dynamically populated -->
+        </ul>
+
+        <div class="sidebar-footer-card">
+          <strong>💖 アイカツ！カード管理</strong>
+          <span>チェックした内容はブラウザに自動保存されます</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Dashboard / Progress Panel -->
+      <section class="dashboard-panel">
+        <div class="dash-top">
+          <div class="current-series-info">
+            <h2 class="current-series-title" id="currentSeriesTitle">読み込み中...</h2>
+            <span class="current-series-tag" id="currentSeriesBadge">-</span>
+          </div>
+          <div class="series-actions-top" id="seriesActionsTop">
+            <!-- Dynamic action buttons (e.g. delete custom series) -->
+          </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="progress-container">
+          <div class="progress-labels">
+            <span>所持コンプリート率</span>
+            <span class="progress-percent" id="progressPercent">0%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+        </div>
+
+        <!-- Stats Chips -->
+        <div class="stats-grid">
+          <div class="stat-chip chip-have">
+            <div class="stat-icon">✨</div>
+            <div class="stat-info">
+              <span class="stat-value" id="statHave">0</span>
+              <span class="stat-label">所持</span>
+            </div>
+          </div>
+          <div class="stat-chip chip-nothave">
+            <div class="stat-icon">🔍</div>
+            <div class="stat-info">
+              <span class="stat-value" id="statNotHave">0</span>
+              <span class="stat-label">未所持</span>
+            </div>
+          </div>
+          <div class="stat-chip chip-want">
+            <div class="stat-icon">💖</div>
+            <div class="stat-info">
+              <span class="stat-value" id="statWant">0</span>
+              <span class="stat-label">欲しい</span>
+            </div>
+          </div>
+          <div class="stat-chip chip-trade">
+            <div class="stat-icon">🔄</div>
+            <div class="stat-info">
+              <span class="stat-value" id="statTrade">0</span>
+              <span class="stat-label">交換可能</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Toolbar / Search / Filter Controls -->
+      <section class="toolbar-panel">
+        <div class="toolbar-row-top">
+          <!-- Search Box -->
+          <div class="search-box-wrap">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="searchInput" class="search-input" placeholder="フリーワード（カード名・カードID）で検索...">
+            <button class="search-clear-btn" id="searchClearBtn" title="検索をクリア">✕</button>
+          </div>
+
+          <!-- Sort Selector -->
+          <select id="sortSelect" class="select-control">
+            <option value="id-asc">カードID順 (昇順)</option>
+            <option value="id-desc">カードID順 (降順)</option>
+            <option value="name-asc">カード名五十音順</option>
+          </select>
+
+          <!-- Batch Action Buttons (apply to the currently filtered cards) -->
+          <div class="batch-actions-group">
+            <select id="batchTargetSelect" class="select-control" title="一括操作の対象">
+              <option value="have">所持</option>
+              <option value="trade">交換可能</option>
+              <option value="want">欲しい</option>
+              <option value="star">譲（募集対象）</option>
+            </select>
+            <button class="btn btn-secondary" id="batchOnBtn" title="絞り込み中のカードに一括でチェックを付ける">一括ON</button>
+            <button class="btn btn-secondary" id="batchOffBtn" title="絞り込み中のカードから一括でチェックを外す">一括OFF</button>
+            <button class="btn btn-secondary" id="btnClearCurrent" title="絞り込み中のカードのチェックを全てリセット">クリア</button>
+          </div>
+        </div>
+
+        <!-- Filter Pills Row (mirrors the official card list's search layout) -->
+        <div class="filter-tabs-row">
+          <div class="filter-group-block">
+            <span class="filter-group-label">絞り込み</span>
+            <div class="filter-pills-group" id="statusFilterGroup">
+              <button class="filter-pill active" data-filter-status="all">すべて</button>
+              <button class="filter-pill" data-filter-status="have">所持</button>
+              <button class="filter-pill" data-filter-status="nothave">未所持</button>
+              <button class="filter-pill" data-filter-status="want">欲しい</button>
+              <button class="filter-pill" data-filter-status="trade">交換可能</button>
+            </div>
+          </div>
+
+          <div class="filter-detail-heading">🔍 くわしくさがす</div>
+
+          <div class="filter-group-block">
+            <span class="filter-group-label">タイプ</span>
+            <div class="filter-pills-group" id="typeFilterGroup">
+              <button class="filter-pill active" data-filter-type="all">すべて</button>
+              <button class="filter-pill" data-filter-type="cute">キュート</button>
+              <button class="filter-pill" data-filter-type="cool">クール</button>
+              <button class="filter-pill" data-filter-type="sexy">セクシー</button>
+              <button class="filter-pill" data-filter-type="pop">ポップ</button>
+            </div>
+          </div>
+
+          <div class="filter-group-block">
+            <span class="filter-group-label">レアリティ</span>
+            <div class="filter-pills-group" id="rarityFilterGroup">
+              <button class="filter-pill active" data-filter-rarity="all">すべて</button>
+              <button class="filter-pill" data-filter-rarity="pr" title="プレミアムレア">PR</button>
+              <button class="filter-pill" data-filter-rarity="r" title="レア">R</button>
+              <button class="filter-pill" data-filter-rarity="n" title="ノーマル">N</button>
+              <button class="filter-pill" data-filter-rarity="mc" title="ミラクルコーデ">MC</button>
+              <button class="filter-pill" data-filter-rarity="cp" title="キャンペーン">CP</button>
+              <button class="filter-pill" data-filter-rarity="p" title="パラレル">P</button>
+            </div>
+          </div>
+
+          <div class="filter-group-block">
+            <span class="filter-group-label">カテゴリ</span>
+            <div class="filter-pills-group" id="partsFilterGroup">
+              <button class="filter-pill active" data-filter-part="all">すべて</button>
+              <button class="filter-pill" data-filter-part="tops">トップス</button>
+              <button class="filter-pill" data-filter-part="bottoms">ボトムス</button>
+              <button class="filter-pill" data-filter-part="shoes">シューズ</button>
+              <button class="filter-pill" data-filter-part="tops_bottoms">トップス&ボトムス</button>
+              <button class="filter-pill" data-filter-part="accessory">アクセサリー</button>
+              <button class="filter-pill" data-filter-part="unknown" title="カード名が未入力で部位を判定できないカード">不明</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Card Grid Area -->
+      <section class="card-grid-container">
+        <div class="card-grid" id="cardGrid">
+          <!-- Dynamically populated -->
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ========================================================
+       Modals
+       ======================================================== -->
+
+  <!-- 1. Card Zoom Modal -->
+  <div class="modal-backdrop" id="imageModalBackdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">
+          <span>🔍 カード詳細拡大</span>
+        </div>
+        <button class="modal-close-btn" id="closeImageModalBtn">&times;</button>
+      </div>
+      <div class="modal-body preview-modal-content">
+        <div class="preview-img-container">
+          <button class="preview-nav-btn preview-prev" id="previewPrevBtn" title="前のカード">‹</button>
+          <img class="preview-img" id="previewModalImg" src="" alt="カード詳細画像">
+          <button class="preview-nav-btn preview-next" id="previewNextBtn" title="次のカード">›</button>
+        </div>
+        <div class="preview-details">
+          <div class="preview-card-id" id="previewModalId">1-1</div>
+          <h3 class="preview-card-name" id="previewModalName">カード名</h3>
+        </div>
+        <div class="qty-stepper" id="previewModalQtyStepper" style="width: 100%; max-width: 320px; justify-content: center;">
+          <!-- Qty stepper injected here -->
+        </div>
+        <div class="check-group" id="previewModalCheckGroup" style="width: 100%; max-width: 320px;">
+          <!-- Cloned check buttons for modal -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Share / X (Twitter) Post Generator Modal -->
+  <div class="modal-backdrop" id="shareModalBackdrop">
+    <div class="modal-card" style="max-width: 640px;">
+      <div class="modal-header">
+        <div class="modal-title">
+          <span>📱 交換募集ジェネレーター</span>
+        </div>
+        <button class="modal-close-btn" id="closeShareModalBtn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="share-image-section">
+          <p style="font-size: 0.95rem; font-weight: 800; margin-bottom: 6px;">🖼️ Xへの募集画像を作成（推奨）</p>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
+            チェックした「求」（欲しい）と「譲」（あげます）のカードを、募集内容ごと1枚の画像にまとめます。Xは文字数制限が厳しいので、カードが多いときはこの画像を投稿するのがおすすめです。「譲」をチェックしたカードがあれば画像にはその「譲」カードだけが載ります（未指定の場合は「交換可能」の一覧を使用）。
+          </p>
+          <div class="share-image-preview-wrap" id="shareImagePreviewWrap">
+            <div class="share-image-empty" id="shareImageEmptyState">「求」または「譲」にチェックしたカードがありません</div>
+            <img class="share-image-preview" id="wantListImagePreview" alt="求・譲カードリスト画像プレビュー" style="display:none;">
+          </div>
+          <div class="share-image-actions">
+            <button class="btn btn-secondary" id="downloadWantImageBtn" disabled>
+              💾 画像をダウンロード
+            </button>
+            <button class="btn btn-primary" id="shareWantImageBtn" disabled>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+              この画像でXに投稿
+            </button>
+          </div>
+        </div>
+
+        <hr style="border: none; border-top: 1px solid var(--border-color); margin: 20px 0;">
+
+        <p style="font-size: 0.95rem; font-weight: 800; margin-bottom: 6px;">📝 テキストで投稿したい場合</p>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
+          カードを一覧で書き出したテキストです。Xだと枚数が多いと文字数制限に引っかかることがあるので、その場合は上の画像投稿をお使いください。LINEやDiscordなど文字数制限のない場所へはこちらをどうぞ。
+        </p>
+        <textarea class="tweet-textarea" id="tweetTextarea" readonly></textarea>
+        <div class="tweet-meta-info">
+          <span id="tweetCharCount">0 文字</span>
+          <span id="tweetCharWarning" style="display:none; color: var(--status-nothave); font-weight: 800;">⚠️ Xでは文字数制限を超える可能性があります</span>
+        </div>
+        <div class="share-text-actions">
+          <button class="btn btn-secondary" id="copyTweetBtn">
+            📋 クリップボードにコピー
+          </button>
+          <button class="btn btn-secondary" id="openTwitterBtn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            テキストのみでXに投稿
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Data Backup & Restore Modal -->
+  <div class="modal-backdrop" id="backupModalBackdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">
+          <span>💾 データの保存・復元 (バックアップ)</span>
+        </div>
+        <button class="modal-close-btn" id="closeBackupModalBtn">&times;</button>
+      </div>
+      <div class="modal-body" style="display: flex; flex-direction: column; gap: 16px;">
+        <div>
+          <h4 style="font-size: 0.95rem; font-weight: 800; margin-bottom: 6px;">バックアップの保存 (エクスポート)</h4>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px;">
+            チェックした全ての所持・交換データをJSONファイルとしてダウンロード保存します。
+          </p>
+          <button class="btn btn-outline-primary" id="exportDataBtn">
+            📥 バックアップファイルを保存
+          </button>
+        </div>
+
+        <hr style="border: none; border-top: 1px solid var(--border-color);">
+
+        <div>
+          <h4 style="font-size: 0.95rem; font-weight: 800; margin-bottom: 6px;">バックアップの復元 (インポート)</h4>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px;">
+            保存したバックアップJSONファイルを選択して、チェック状態を復元します。
+          </p>
+          <input type="file" id="importFileInput" accept=".json" style="display: none;">
+          <button class="btn btn-secondary" id="importDataBtn">
+            📤 ファイルから復元する
+          </button>
+        </div>
+
+        <hr style="border: none; border-top: 1px solid var(--border-color);">
+
+        <div>
+          <h4 style="font-size: 0.95rem; font-weight: 800; color: var(--status-nothave); margin-bottom: 6px;">全データ初期化</h4>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px;">
+            全てのシリーズのチェック情報を完全にリセットします。
+          </p>
+          <button class="btn btn-secondary" id="resetAllDataBtn" style="color: var(--status-nothave); border-color: var(--status-nothave);">
+            ⚠️ 全てのデータをリセット
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- External Fallback Master Configuration -->
+  <script src="cards_data.js"></script>
+
+  <!-- ========================================================
+       Application JavaScript
+       ======================================================== -->
+  <script>
+    (function() {
+      'use strict';
+
+      // --- State Management ---
+      const STORAGE_KEY = 'aikatsu_multi_check_data';
+      const THEME_KEY = 'aikatsu_app_theme';
+
+      let seriesList = [];
+      let currentSeriesIndex = 0;
+      let currentCardList = [];
+      let currentActiveCardId = null;
+
+      // Filters & Search
+      let filterQuery = '';
+      let filterStatus = 'all'; // 'all', 'have', 'nothave', 'want', 'trade'
+      let filterPart = 'all';   // 'all', 'tops', 'bottoms', 'shoes', 'tops_bottoms', 'accessory'
+      let filterRarity = 'all'; // 'all', 'pr', 'r', 'n', 'mc', 'cp', 'p'
+      let filterType = 'all';   // 'all', 'cute', 'cool', 'sexy', 'pop'
+      let currentSort = 'id-asc';
+
+      // LocalStorage check state
+      let userState = {};
+      try {
+        userState = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+      } catch (e) {
+        console.error('Failed to load state from localStorage:', e);
+        userState = {};
+      }
+
+      // --- DOM Elements ---
+      const seriesNavList = document.getElementById('seriesNavList');
+      const currentSeriesTitle = document.getElementById('currentSeriesTitle');
+      const currentSeriesBadge = document.getElementById('currentSeriesBadge');
+      const seriesActionsTop = document.getElementById('seriesActionsTop');
+      const progressPercent = document.getElementById('progressPercent');
+      const progressFill = document.getElementById('progressFill');
+      const statHave = document.getElementById('statHave');
+      const statNotHave = document.getElementById('statNotHave');
+      const statWant = document.getElementById('statWant');
+      const statTrade = document.getElementById('statTrade');
+
+      const cardGrid = document.getElementById('cardGrid');
+      const searchInput = document.getElementById('searchInput');
+      const searchClearBtn = document.getElementById('searchClearBtn');
+      const sortSelect = document.getElementById('sortSelect');
+      const statusFilterGroup = document.getElementById('statusFilterGroup');
+      const partsFilterGroup = document.getElementById('partsFilterGroup');
+      const rarityFilterGroup = document.getElementById('rarityFilterGroup');
+      const typeFilterGroup = document.getElementById('typeFilterGroup');
+
+      // Modals
+      const imageModalBackdrop = document.getElementById('imageModalBackdrop');
+      const closeImageModalBtn = document.getElementById('closeImageModalBtn');
+      const previewModalImg = document.getElementById('previewModalImg');
+      const previewModalId = document.getElementById('previewModalId');
+      const previewModalName = document.getElementById('previewModalName');
+      const previewModalCheckGroup = document.getElementById('previewModalCheckGroup');
+      const previewModalQtyStepper = document.getElementById('previewModalQtyStepper');
+      const previewPrevBtn = document.getElementById('previewPrevBtn');
+      const previewNextBtn = document.getElementById('previewNextBtn');
+
+      const shareModalBackdrop = document.getElementById('shareModalBackdrop');
+      const openShareModalBtn = document.getElementById('openShareModalBtn');
+      const closeShareModalBtn = document.getElementById('closeShareModalBtn');
+      const tweetTextarea = document.getElementById('tweetTextarea');
+      const tweetCharCount = document.getElementById('tweetCharCount');
+      const tweetCharWarning = document.getElementById('tweetCharWarning');
+      const copyTweetBtn = document.getElementById('copyTweetBtn');
+      const openTwitterBtn = document.getElementById('openTwitterBtn');
+
+      const shareImageEmptyState = document.getElementById('shareImageEmptyState');
+      const wantListImagePreview = document.getElementById('wantListImagePreview');
+      const downloadWantImageBtn = document.getElementById('downloadWantImageBtn');
+      const shareWantImageBtn = document.getElementById('shareWantImageBtn');
+      let wantListImageBlob = null;
+
+      const backupModalBackdrop = document.getElementById('backupModalBackdrop');
+      const openBackupModalBtn = document.getElementById('openBackupModalBtn');
+      const closeBackupModalBtn = document.getElementById('closeBackupModalBtn');
+      const exportDataBtn = document.getElementById('exportDataBtn');
+      const importDataBtn = document.getElementById('importDataBtn');
+      const importFileInput = document.getElementById('importFileInput');
+      const resetAllDataBtn = document.getElementById('resetAllDataBtn');
+
+      const themeToggleBtn = document.getElementById('themeToggleBtn');
+      const themeIcon = document.getElementById('themeIcon');
+      const toastContainer = document.getElementById('toastContainer');
+
+      const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+      const sidebar = document.getElementById('sidebar');
+      const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+
+      // --- Helper: Determine Clothing Part from Card Name ---
+      function detectCardPart(name) {
+        if (!name) return { type: 'unknown', label: '不明', class: 'badge-unknown' };
+
+        // Real card names are always in Japanese. A name with no Japanese
+        // characters at all (hiragana/katakana/kanji) is almost certainly a
+        // placeholder — e.g. the card's own ID used as a stand-in name
+        // because the real name hasn't been filled in yet. Guessing a
+        // category from that would just be a confident-looking wrong
+        // answer, so it's flagged as "不明" (unknown) instead.
+        const hasJapanese = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]/.test(name);
+        if (!hasJapanese) {
+          return { type: 'unknown', label: '不明', class: 'badge-unknown' };
+        }
+
+        if (name.includes('トップス') || name.includes('ブラウス') || name.includes('ベスト') || name.includes('ジャケット') || name.includes('キャミソール') || name.includes('Tシャツ') || name.includes('シャツ')) {
+          return { type: 'tops', label: 'トップス', class: 'badge-tops' };
+        }
+        if (name.includes('スカート') || name.includes('パンツ') || name.includes('ボトムス') || name.includes('パニエ') || name.includes('キュロット')) {
+          return { type: 'bottoms', label: 'ボトムス', class: 'badge-bottoms' };
+        }
+        if (name.includes('シューズ') || name.includes('サンダル') || name.includes('ミュール') || name.includes('ブーツ') || name.includes('スニーカー') || name.includes('パンプス') || name.includes('ブーティ')) {
+          return { type: 'shoes', label: 'シューズ', class: 'badge-shoes' };
+        }
+        if (name.includes('アクセ') || name.includes('コサージュ') || name.includes('リボン') || name.includes('ティアラ') || name.includes('カチューシャ') || name.includes('ハット') || name.includes('クラウン') || name.includes('ベレー')) {
+          return { type: 'accessory', label: 'アクセサリー', class: 'badge-accessory' };
+        }
+        // One-piece / set items that cover both a top and a bottom in a
+        // single card — matches the official card list's "トップス&ボトムス" category.
+        return { type: 'tops_bottoms', label: 'トップス&ボトムス', class: 'badge-tops-bottoms' };
+      }
+
+      // --- Helper: Parse numeric ID for proper sorting ---
+      function parseCardId(id) {
+        const parts = String(id).split('-');
+        if (parts.length >= 2) {
+          const num1 = parseInt(parts[0].replace(/\D/g, ''), 10) || 0;
+          const num2 = parseInt(parts[1].replace(/\D/g, ''), 10) || 0;
+          return num1 * 10000 + num2;
+        }
+        return 0;
+      }
+
+      // --- Helper: Get a card's check state, defaulting to "未所持" (not-have)
+      //     the first time a card is seen. Once saved to userState, the saved
+      //     value is always used on subsequent loads. ---
+      function getCardState(cardId) {
+        const s = userState[cardId];
+        if (!s) return defaultCardState();
+        // Backward-compatible: fill in any fields missing from older saves.
+        if (s.star === undefined) s.star = false;
+        if (s.qty === undefined) s.qty = s.notHave ? 0 : 1;
+        return s;
+      }
+      function defaultCardState() {
+        return { notHave: true, trade: false, want: false, star: false, qty: 0 };
+      }
+
+      // --- Helper: Determine card rarity (PR / R / N / MC / CP / P) ---
+      const RARITY_LABELS = { pr: 'PR', r: 'R', n: 'N', mc: 'MC', cp: 'CP', p: 'P' };
+      const RARITY_COLORS = {
+        pr: '#ffb300', r: '#ff4081', n: '#9e96b8',
+        mc: '#7c4dff', cp: '#00c853', p: '#2979ff'
+      };
+      function getRarity(card) {
+        if (card && card.rarity) {
+          const key = String(card.rarity).toLowerCase();
+          if (RARITY_LABELS[key]) return key;
+        }
+        if (!card || !card.image) return null;
+        const fname = card.image.split('/').pop() || '';
+        const m = fname.match(/^(pr|mc|cp|n|r|p)/i);
+        return m ? m[1].toLowerCase() : null;
+      }
+
+      // --- Toast Notification ---
+      function showToast(message) {
+        const toast = document.createElement('div');
+        toast.className = 'toast-msg';
+        toast.innerHTML = `<span>💖</span><span>${message}</span>`;
+        toastContainer.appendChild(toast);
+        setTimeout(() => {
+          toast.style.opacity = '0';
+          toast.style.transform = 'translateY(10px)';
+          toast.style.transition = 'all 0.3s ease';
+          setTimeout(() => toast.remove(), 300);
+        }, 2800);
+      }
+
+      // --- Theme Management ---
+      function initTheme() {
+        const savedTheme = localStorage.getItem(THEME_KEY) || 'light';
+        applyTheme(savedTheme);
+      }
+      function applyTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem(THEME_KEY, theme);
+        themeIcon.textContent = theme === 'dark' ? '☀️' : '🌙';
+      }
+      themeToggleBtn.addEventListener('click', () => {
+        const current = document.documentElement.getAttribute('data-theme') || 'light';
+        applyTheme(current === 'dark' ? 'light' : 'dark');
+      });
+
+      // --- Sidebar Mobile Drawer ---
+      function toggleMobileMenu(isOpen) {
+        sidebar.classList.toggle('is-open', isOpen);
+        sidebarBackdrop.classList.toggle('is-open', isOpen);
+      }
+      mobileMenuBtn.addEventListener('click', () => toggleMobileMenu(true));
+      sidebarBackdrop.addEventListener('click', () => toggleMobileMenu(false));
+
+      // --- Save State to LocalStorage ---
+      function saveUserState() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(userState));
+        } catch (e) {
+          console.error('Failed to save to localStorage:', e);
+        }
+      }
+
+      // --- Initialize Series List (Manifest + cards_data.js + Custom) ---
+      async function initSeriesData() {
+        let manifest = [];
+        try {
+          const res = await fetch('series_manifest.json');
+          if (res.ok) {
+            manifest = await res.json();
+          }
+        } catch (e) {
+          console.warn('Could not fetch series_manifest.json (local file:// or offline), falling back to cards_data.js');
+        }
+
+        if (!manifest || manifest.length === 0) {
+          if (window.AIKATSU_SERIES_CONFIG && window.AIKATSU_SERIES_CONFIG.length > 0) {
+            manifest = window.AIKATSU_SERIES_CONFIG.map(s => ({
+              id: s.id,
+              name: s.name,
+              file: s.file,
+              badge: s.badge || '',
+              cards: s.cards
+            }));
+          } else {
+            manifest = [
+              { id: "series_2016_1", name: "2016年 第1弾", file: "data/series_2016_1.json", badge: "1弾" }
+            ];
+          }
+        }
+
+        seriesList = manifest;
+        renderSidebar();
+        loadSeriesData(seriesList[0]);
+      }
+
+      // --- Render Sidebar Navigation ---
+      function renderSidebar() {
+        seriesNavList.innerHTML = '';
+        seriesList.forEach((series, index) => {
+          const li = document.createElement('li');
+          li.className = `series-nav-item ${index === currentSeriesIndex ? 'active' : ''}`;
+          
+          li.innerHTML = `
+            <div class="series-nav-item-left">
+              <span class="series-name-label" title="${series.name}">${series.name}</span>
+            </div>
+            <span class="series-badge">${series.badge || (index + 1 + '弾')}</span>
+          `;
+          li.addEventListener('click', () => {
+            if (currentSeriesIndex !== index) {
+              currentSeriesIndex = index;
+              renderSidebar();
+              loadSeriesData(series);
+              toggleMobileMenu(false);
+            }
+          });
+          seriesNavList.appendChild(li);
+        });
+      }
+
+      // --- Load Series Data (Fetch with Fallback to Embedded Master) ---
+      async function loadSeriesData(series) {
+        if (!series) return;
+        currentSeriesTitle.textContent = series.name;
+        currentSeriesBadge.textContent = series.badge || '';
+
+        // If custom series with inline cards
+        if (series.cards && Array.isArray(series.cards)) {
+          currentCardList = series.cards;
+          renderApp();
+          renderSeriesTopActions(series);
+          return;
+        }
+
+        // Try to fetch file
+        let loaded = false;
+        if (series.file) {
+          try {
+            const res = await fetch(series.file);
+            if (res.ok) {
+              currentCardList = await res.json();
+              loaded = true;
+            }
+          } catch (e) {
+            console.warn(`Fetch ${series.file} failed, looking up in AIKATSU_SERIES_CONFIG:`, e);
+          }
+        }
+
+        // Fallback: search in window.AIKATSU_SERIES_CONFIG
+        if (!loaded && window.AIKATSU_SERIES_CONFIG) {
+          const matched = window.AIKATSU_SERIES_CONFIG.find(s => s.id === series.id || s.file === series.file);
+          if (matched && matched.cards) {
+            currentCardList = matched.cards;
+            loaded = true;
+          }
+        }
+
+        if (!loaded) {
+          currentCardList = [];
+        }
+
+        renderApp();
+        renderSeriesTopActions(series);
+      }
+
+      function renderSeriesTopActions(series) {
+        seriesActionsTop.innerHTML = '';
+      }
+
+      // --- Compute Stats & Progress ---
+      function updateDashboardStats() {
+        const totalCards = currentCardList.length;
+        if (totalCards === 0) {
+          progressPercent.textContent = '0%';
+          progressFill.style.width = '0%';
+          statHave.textContent = '0';
+          statNotHave.textContent = '0';
+          statWant.textContent = '0';
+          statTrade.textContent = '0';
+          return;
+        }
+
+        let notHaveCount = 0;
+        let wantCount = 0;
+        let tradeCount = 0;
+
+        currentCardList.forEach(card => {
+          const state = getCardState(card.id);
+          if (state.notHave) notHaveCount++;
+          if (state.want) wantCount++;
+          if (state.trade) tradeCount++;
+        });
+
+        const haveCount = Math.max(0, totalCards - notHaveCount);
+        const havePercentage = Math.round((haveCount / totalCards) * 100);
+
+        progressPercent.textContent = `${havePercentage}% (${haveCount}/${totalCards})`;
+        progressFill.style.width = `${havePercentage}%`;
+
+        statHave.textContent = haveCount;
+        statNotHave.textContent = notHaveCount;
+        statWant.textContent = wantCount;
+        statTrade.textContent = tradeCount;
+      }
+
+      // --- Shared filter/sort logic (used by rendering and bulk actions) ---
+      function getFilteredSortedCards() {
+        let filtered = currentCardList.filter(card => {
+          if (filterQuery) {
+            const q = filterQuery.toLowerCase();
+            const matchName = card.name.toLowerCase().includes(q);
+            const matchId = card.id.toLowerCase().includes(q);
+            if (!matchName && !matchId) return false;
+          }
+
+          if (filterPart !== 'all') {
+            const partInfo = detectCardPart(card.name);
+            if (partInfo.type !== filterPart) return false;
+          }
+
+          if (filterType !== 'all') {
+            if (!card.type || card.type.toLowerCase() !== filterType) return false;
+          }
+
+          if (filterRarity !== 'all') {
+            if (getRarity(card) !== filterRarity) return false;
+          }
+
+          const state = getCardState(card.id);
+          if (filterStatus === 'have' && state.notHave) return false;
+          if (filterStatus === 'nothave' && !state.notHave) return false;
+          if (filterStatus === 'want' && !state.want) return false;
+          if (filterStatus === 'trade' && !state.trade) return false;
+
+          return true;
+        });
+
+        filtered.sort((a, b) => {
+          if (currentSort === 'id-asc') {
+            return parseCardId(a.id) - parseCardId(b.id);
+          } else if (currentSort === 'id-desc') {
+            return parseCardId(b.id) - parseCardId(a.id);
+          } else if (currentSort === 'name-asc') {
+            return a.name.localeCompare(b.name, 'ja');
+          }
+          return 0;
+        });
+
+        return filtered;
+      }
+
+      // --- Render Cards Grid ---
+      function renderCards() {
+        cardGrid.innerHTML = '';
+
+        const filtered = getFilteredSortedCards();
+
+        if (filtered.length === 0) {
+          const emptyDiv = document.createElement('div');
+          emptyDiv.className = 'empty-state';
+          emptyDiv.innerHTML = `
+            <span class="empty-state-icon">🌸</span>
+            <h3>該当するカードが見つかりませんでした</h3>
+            <p>検索条件やフィルターを変更してお試しください。</p>
+          `;
+          cardGrid.appendChild(emptyDiv);
+          return;
+        }
+
+        filtered.forEach(card => {
+          const state = getCardState(card.id);
+          const partInfo = detectCardPart(card.name);
+
+          const cardEl = document.createElement('div');
+          cardEl.className = `card-item ${state.notHave ? 'is-nothave' : 'is-have'} ${state.want ? 'is-want' : ''}`;
+          cardEl.id = `card-item-${card.id}`;
+
+          let typeBadgeHtml = '';
+          if (card.type) {
+            const t = card.type.toLowerCase();
+            const typeLabels = { cute: 'キュート', cool: 'クール', sexy: 'セクシー', pop: 'ポップ' };
+            typeBadgeHtml = `<span class="card-type-badge card-type-${t}">${typeLabels[t] || t}</span>`;
+          }
+
+          const rarity = getRarity(card);
+          const rarityBadgeHtml = rarity ? `<span class="card-rarity-badge rarity-${rarity}">${RARITY_LABELS[rarity]}</span>` : '';
+
+          cardEl.innerHTML = `
+            <div class="card-img-wrapper" data-card-id="${card.id}">
+              <div class="card-badge-container">
+                <span class="card-part-badge ${partInfo.class}">${partInfo.label}</span>
+                ${typeBadgeHtml}
+              </div>
+              ${rarityBadgeHtml}
+              <img class="card-img" src="${card.image || ''}" alt="${card.name}" loading="lazy" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'160\\' height=\\'220\\' viewBox=\\'0 0 160 220\\'><rect fill=\\'%23f3e5f5\\' width=\\'160\\' height=\\'220\\'/><text fill=\\'%23ab47bc\\' x=\\'50%\\' y=\\'50%\\' dominant-baseline=\\'middle\\' text-anchor=\\'middle\\' font-size=\\'14\\' font-weight=\\'bold\\' font-family=\\'sans-serif\\'>Aikatsu!</text></svg>'">
+              <div class="img-zoom-overlay">🔍</div>
+            </div>
+            <div class="card-info">
+              <div class="card-id-row">
+                <span class="card-id">${card.id}</span>
+              </div>
+              <div class="card-name" title="${card.name}">${card.name}</div>
+            </div>
+            <div class="qty-stepper">
+              <span class="qty-stepper-label">所持数</span>
+              <button type="button" class="qty-btn qty-minus" data-card-id="${card.id}" aria-label="所持数を減らす">−</button>
+              <span class="qty-value">${state.qty || 0}</span>
+              <button type="button" class="qty-btn qty-plus" data-card-id="${card.id}" aria-label="所持数を増やす">＋</button>
+            </div>
+            <div class="check-group">
+              <label class="check-btn-label lbl-nothave ${state.notHave ? 'is-active' : ''}" title="未所持">
+                <span>未</span>
+                <input type="checkbox" ${state.notHave ? 'checked' : ''} data-card-id="${card.id}" data-type="notHave">
+              </label>
+              <label class="check-btn-label lbl-trade ${state.trade ? 'is-active' : ''}" title="交換可能">
+                <span>交換可</span>
+                <input type="checkbox" ${state.trade ? 'checked' : ''} data-card-id="${card.id}" data-type="trade">
+              </label>
+              <label class="check-btn-label lbl-want ${state.want ? 'is-active' : ''}" title="欲しい">
+                <span>求</span>
+                <input type="checkbox" ${state.want ? 'checked' : ''} data-card-id="${card.id}" data-type="want">
+              </label>
+              <label class="check-btn-label lbl-star ${state.star ? 'is-active' : ''}" title="交換募集ジェネレーターの「譲」に載せる">
+                <span>譲</span>
+                <input type="checkbox" ${state.star ? 'checked' : ''} data-card-id="${card.id}" data-type="star">
+              </label>
+            </div>
+          `;
+
+          // Image zoom click
+          const imgWrapper = cardEl.querySelector('.card-img-wrapper');
+          imgWrapper.addEventListener('click', () => openImageModal(card.id));
+
+          // Qty stepper
+          cardEl.querySelector('.qty-minus').addEventListener('click', (e) => {
+            e.stopPropagation();
+            updateQty(card.id, -1);
+          });
+          cardEl.querySelector('.qty-plus').addEventListener('click', (e) => {
+            e.stopPropagation();
+            updateQty(card.id, 1);
+          });
+
+          // Checkbox changes
+          const checkboxes = cardEl.querySelectorAll('input[type="checkbox"]');
+          checkboxes.forEach(cb => {
+            cb.addEventListener('change', (e) => {
+              const cId = e.target.getAttribute('data-card-id');
+              const cType = e.target.getAttribute('data-type');
+              updateCheckState(cId, cType, e.target.checked);
+            });
+          });
+
+          cardGrid.appendChild(cardEl);
+        });
+      }
+
+      // --- Update Check State ---
+      function updateCheckState(cardId, attr, isChecked) {
+        if (!userState[cardId]) {
+          userState[cardId] = defaultCardState();
+        }
+        userState[cardId][attr] = isChecked;
+
+        // Keep the owned-quantity in sync with the have/not-have checkbox.
+        if (attr === 'notHave') {
+          if (isChecked) {
+            userState[cardId].qty = 0;
+          } else if (!userState[cardId].qty) {
+            userState[cardId].qty = 1;
+          }
+        }
+
+        saveUserState();
+
+        const cardEl = document.getElementById(`card-item-${cardId}`);
+        if (cardEl) {
+          const state = userState[cardId];
+          cardEl.classList.toggle('is-nothave', !!state.notHave);
+          cardEl.classList.toggle('is-have', !state.notHave);
+          cardEl.classList.toggle('is-want', !!state.want);
+
+          const inputEl = cardEl.querySelector(`input[data-type="${attr}"]`);
+          if (inputEl) {
+            inputEl.checked = isChecked;
+            const parentLbl = inputEl.closest('.check-btn-label');
+            if (parentLbl) {
+              parentLbl.classList.toggle('is-active', isChecked);
+            }
+          }
+
+          // Reflect any auto-adjusted qty and the notHave checkbox/label too.
+          const qtyEl = cardEl.querySelector('.qty-value');
+          if (qtyEl) qtyEl.textContent = state.qty || 0;
+          const notHaveInput = cardEl.querySelector('input[data-type="notHave"]');
+          if (notHaveInput) {
+            notHaveInput.checked = state.notHave;
+            const notHaveLbl = notHaveInput.closest('.check-btn-label');
+            if (notHaveLbl) notHaveLbl.classList.toggle('is-active', !!state.notHave);
+          }
+        }
+
+        if (currentActiveCardId === cardId && imageModalBackdrop.classList.contains('is-open')) {
+          renderModalCheckGroup(cardId);
+        }
+
+        updateDashboardStats();
+      }
+
+      // --- Update Owned Quantity (+/- steppers) ---
+      function updateQty(cardId, delta) {
+        if (!userState[cardId]) {
+          userState[cardId] = defaultCardState();
+        }
+        const state = userState[cardId];
+        const newQty = Math.max(0, (state.qty || 0) + delta);
+        state.qty = newQty;
+
+        // Keep the have/not-have checkbox in sync with the quantity.
+        if (newQty > 0 && state.notHave) {
+          state.notHave = false;
+        } else if (newQty === 0 && !state.notHave) {
+          state.notHave = true;
+        }
+
+        saveUserState();
+
+        const cardEl = document.getElementById(`card-item-${cardId}`);
+        if (cardEl) {
+          cardEl.classList.toggle('is-nothave', !!state.notHave);
+          cardEl.classList.toggle('is-have', !state.notHave);
+
+          const qtyEl = cardEl.querySelector('.qty-value');
+          if (qtyEl) qtyEl.textContent = newQty;
+
+          const notHaveInput = cardEl.querySelector('input[data-type="notHave"]');
+          if (notHaveInput) {
+            notHaveInput.checked = state.notHave;
+            const lbl = notHaveInput.closest('.check-btn-label');
+            if (lbl) lbl.classList.toggle('is-active', !!state.notHave);
+          }
+        }
+
+        if (currentActiveCardId === cardId && imageModalBackdrop.classList.contains('is-open')) {
+          renderModalCheckGroup(cardId);
+        }
+
+        updateDashboardStats();
+      }
+
+      // --- Batch Operations ---
+      // --- Batch Operations (apply to the currently filtered/displayed cards) ---
+      const batchTargetSelect = document.getElementById('batchTargetSelect');
+      const batchOnBtn = document.getElementById('batchOnBtn');
+      const batchOffBtn = document.getElementById('batchOffBtn');
+
+      const BATCH_ATTR_MAP = {
+        have:  { key: 'notHave', onValue: false, offValue: true,  label: '所持' },
+        trade: { key: 'trade',   onValue: true,  offValue: false, label: '交換可能' },
+        want:  { key: 'want',    onValue: true,  offValue: false, label: '欲しい' },
+        star:  { key: 'star',    onValue: true,  offValue: false, label: '譲（募集対象）' }
+      };
+
+      function applyBatchToggle(turnOn) {
+        const map = BATCH_ATTR_MAP[batchTargetSelect.value];
+        const cards = getFilteredSortedCards();
+        if (cards.length === 0) {
+          showToast('絞り込み条件に一致するカードがありません');
+          return;
+        }
+        cards.forEach(card => {
+          if (!userState[card.id]) userState[card.id] = defaultCardState();
+          const state = userState[card.id];
+          state[map.key] = turnOn ? map.onValue : map.offValue;
+          if (map.key === 'notHave') {
+            if (state.notHave) {
+              state.qty = 0;
+            } else if (!state.qty) {
+              state.qty = 1;
+            }
+          }
+        });
+        saveUserState();
+        renderApp();
+        showToast(`絞り込み中の${cards.length}枚を「${map.label}」${turnOn ? 'ON' : 'OFF'}にしました`);
+      }
+
+      batchOnBtn.addEventListener('click', () => applyBatchToggle(true));
+      batchOffBtn.addEventListener('click', () => applyBatchToggle(false));
+
+      document.getElementById('btnClearCurrent').addEventListener('click', () => {
+        const cards = getFilteredSortedCards();
+        if (cards.length === 0) {
+          showToast('絞り込み条件に一致するカードがありません');
+          return;
+        }
+        if (!confirm(`絞り込み中の${cards.length}枚のチェック（未所持・交換・欲しい・★・所持数）をリセットしますか？`)) return;
+        cards.forEach(card => {
+          userState[card.id] = defaultCardState();
+        });
+        saveUserState();
+        renderApp();
+        showToast('チェックをクリアしました');
+      });
+
+      // --- Search & Filter Listeners ---
+      searchInput.addEventListener('input', (e) => {
+        filterQuery = e.target.value.trim();
+        searchClearBtn.style.display = filterQuery ? 'block' : 'none';
+        renderCards();
+      });
+      searchClearBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        filterQuery = '';
+        searchClearBtn.style.display = 'none';
+        renderCards();
+      });
+
+      sortSelect.addEventListener('change', (e) => {
+        currentSort = e.target.value;
+        renderCards();
+      });
+
+      statusFilterGroup.addEventListener('click', (e) => {
+        const btn = e.target.closest('.filter-pill');
+        if (!btn) return;
+        statusFilterGroup.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        filterStatus = btn.getAttribute('data-filter-status');
+        renderCards();
+      });
+
+      partsFilterGroup.addEventListener('click', (e) => {
+        const btn = e.target.closest('.filter-pill');
+        if (!btn) return;
+        partsFilterGroup.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        filterPart = btn.getAttribute('data-filter-part');
+        renderCards();
+      });
+
+      rarityFilterGroup.addEventListener('click', (e) => {
+        const btn = e.target.closest('.filter-pill');
+        if (!btn) return;
+        rarityFilterGroup.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        filterRarity = btn.getAttribute('data-filter-rarity');
+        renderCards();
+      });
+
+      typeFilterGroup.addEventListener('click', (e) => {
+        const btn = e.target.closest('.filter-pill');
+        if (!btn) return;
+        typeFilterGroup.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        filterType = btn.getAttribute('data-filter-type');
+        renderCards();
+      });
+
+      // --- Image Zoom Modal ---
+      function openImageModal(cardId) {
+        currentActiveCardId = cardId;
+        const card = currentCardList.find(c => c.id === cardId);
+        if (!card) return;
+
+        previewModalImg.src = card.image || '';
+        previewModalId.textContent = card.id;
+        previewModalName.textContent = card.name;
+
+        renderModalCheckGroup(cardId);
+        imageModalBackdrop.classList.add('is-open');
+      }
+
+      function renderModalCheckGroup(cardId) {
+        const state = getCardState(cardId);
+
+        previewModalQtyStepper.innerHTML = `
+          <span class="qty-stepper-label">所持数</span>
+          <button type="button" class="qty-btn qty-minus" aria-label="所持数を減らす">−</button>
+          <span class="qty-value">${state.qty || 0}</span>
+          <button type="button" class="qty-btn qty-plus" aria-label="所持数を増やす">＋</button>
+        `;
+        previewModalQtyStepper.querySelector('.qty-minus').addEventListener('click', () => updateQty(cardId, -1));
+        previewModalQtyStepper.querySelector('.qty-plus').addEventListener('click', () => updateQty(cardId, 1));
+
+        previewModalCheckGroup.innerHTML = `
+          <label class="check-btn-label lbl-nothave ${state.notHave ? 'is-active' : ''}" title="未所持">
+            <span>未</span>
+            <input type="checkbox" ${state.notHave ? 'checked' : ''} data-type="notHave">
+          </label>
+          <label class="check-btn-label lbl-trade ${state.trade ? 'is-active' : ''}" title="交換可能">
+            <span>交換可</span>
+            <input type="checkbox" ${state.trade ? 'checked' : ''} data-type="trade">
+          </label>
+          <label class="check-btn-label lbl-want ${state.want ? 'is-active' : ''}" title="欲しい">
+            <span>求</span>
+            <input type="checkbox" ${state.want ? 'checked' : ''} data-type="want">
+          </label>
+          <label class="check-btn-label lbl-star ${state.star ? 'is-active' : ''}" title="交換募集ジェネレーターの「譲」に載せる">
+            <span>譲</span>
+            <input type="checkbox" ${state.star ? 'checked' : ''} data-type="star">
+          </label>
+        `;
+
+        previewModalCheckGroup.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+          cb.addEventListener('change', (e) => {
+            const attr = e.target.getAttribute('data-type');
+            updateCheckState(cardId, attr, e.target.checked);
+          });
+        });
+      }
+
+      function navigateModal(direction) {
+        if (!currentActiveCardId) return;
+        const currentIndex = currentCardList.findIndex(c => c.id === currentActiveCardId);
+        if (currentIndex === -1) return;
+        const newIndex = (currentIndex + direction + currentCardList.length) % currentCardList.length;
+        openImageModal(currentCardList[newIndex].id);
+      }
+
+      closeImageModalBtn.addEventListener('click', () => imageModalBackdrop.classList.remove('is-open'));
+      previewPrevBtn.addEventListener('click', (e) => { e.stopPropagation(); navigateModal(-1); });
+      previewNextBtn.addEventListener('click', (e) => { e.stopPropagation(); navigateModal(1); });
+      imageModalBackdrop.addEventListener('click', (e) => {
+        if (e.target === imageModalBackdrop) imageModalBackdrop.classList.remove('is-open');
+      });
+
+      // --- Twitter/X Share Generator ---
+      openShareModalBtn.addEventListener('click', () => {
+        generateShareText();
+        shareModalBackdrop.classList.add('is-open');
+        generateWantListImage();
+      });
+      closeShareModalBtn.addEventListener('click', () => shareModalBackdrop.classList.remove('is-open'));
+      shareModalBackdrop.addEventListener('click', (e) => {
+        if (e.target === shareModalBackdrop) shareModalBackdrop.classList.remove('is-open');
+      });
+
+      function generateShareText() {
+        const currentSeries = seriesList[currentSeriesIndex];
+        const wantCards = currentCardList
+          .filter(c => userState[c.id] && userState[c.id].want)
+          .map(c => `${c.id} ${c.name}`);
+        const tradeCards = getGiveCardsForShare().map(c => `${c.id} ${c.name}`);
+
+        let text = `【アイカツ！カード交換募集】\n`;
+        text += `シリーズ: ${currentSeries ? currentSeries.name : ''}\n\n`;
+
+        text += `【譲】交換可能\n`;
+        if (tradeCards.length > 0) {
+          text += tradeCards.map(c => `・${c}`).join('\n') + '\n\n';
+        } else {
+          text += `（未指定）\n\n`;
+        }
+
+        text += `【求】希望\n`;
+        if (wantCards.length > 0) {
+          text += wantCards.map(c => `・${c}`).join('\n') + '\n\n';
+        } else {
+          text += `（未指定）\n\n`;
+        }
+
+        text += `#アイカツ #アイカツトレード #アイカツカード`;
+
+        tweetTextarea.value = text;
+        tweetCharCount.textContent = `${text.length} 文字`;
+
+        // X counts most Japanese characters as weight 2 toward its 280-char
+        // limit, so plain text is effectively capped around ~140 characters
+        // for mostly-Japanese content. Warn once the list is likely to be
+        // rejected as too long, since that's exactly why the image option
+        // above exists.
+        tweetCharWarning.style.display = text.length > 140 ? 'inline' : 'none';
+      }
+
+      // Short caption used when sharing the generated IMAGE to X — the full
+      // itemized list lives in the picture itself, so the accompanying text
+      // just needs to be a brief, always-safe-length summary.
+      function generateShortCaption() {
+        const currentSeries = seriesList[currentSeriesIndex];
+        const wantCount = currentCardList.filter(c => userState[c.id] && userState[c.id].want).length;
+        const giveCount = getGiveCardsForShare().length;
+        return `【アイカツ！カード交換募集】${currentSeries ? currentSeries.name : ''}\n求${wantCount}枚／譲${giveCount}枚（詳細は画像をご覧ください）\n#アイカツ #アイカツトレード #アイカツカード`;
+      }
+
+      copyTweetBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(tweetTextarea.value).then(() => {
+          showToast('クリップボードに募集文をコピーしました！');
+        }).catch(() => {
+          tweetTextarea.select();
+          document.execCommand('copy');
+          showToast('募集文をコピーしました！');
+        });
+      });
+
+      openTwitterBtn.addEventListener('click', () => {
+        const text = encodeURIComponent(tweetTextarea.value);
+        const url = `https://twitter.com/intent/tweet?text=${text}`;
+        window.open(url, '_blank', 'noopener,noreferrer');
+      });
+
+      // --- Want List Image Generator (for X / image sharing) ---
+
+      // Try loading a single image URL with a bounded timeout. Resolves with
+      // the loaded Image on success, or null on any failure/timeout — never
+      // rejects, so callers can chain fallbacks safely.
+      function tryLoadImage(src, timeoutMs) {
+        return new Promise((resolve) => {
+          let settled = false;
+          const finish = (result) => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            resolve(result);
+          };
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => finish(img);
+          img.onerror = () => finish(null);
+          const timer = setTimeout(() => finish(null), timeoutMs);
+          img.src = src;
+        });
+      }
+
+      // Most card-image hosts (including aikatsu.com) don't send CORS
+      // headers, so a direct crossOrigin fetch from canvas fails even though
+      // the image displays fine as a normal <img>. images.weserv.nl is a
+      // free, widely-used image proxy that re-serves any public image with
+      // permissive CORS headers, letting the real card artwork be embedded
+      // in the generated picture instead of falling back to a placeholder.
+      function buildCorsProxyUrl(url) {
+        const noProtocol = url.replace(/^https?:\/\//i, '');
+        return `https://images.weserv.nl/?url=${encodeURIComponent(noProtocol)}`;
+      }
+
+      // Load an image safely for canvas use. Resolves even on failure so the
+      // canvas is never "tainted" and export always succeeds within a
+      // bounded time (falls back to a placeholder box only if both the
+      // direct load and the CORS-proxy fallback fail or time out).
+      // A cache-busting query param forces a fresh request instead of
+      // reusing a plain (non-CORS) cached copy from the card grid, which is
+      // the usual cause of a canvas silently becoming tainted.
+      async function loadImageForCanvas(url) {
+        if (!url) return { img: null, ok: false };
+
+        const sep = url.includes('?') ? '&' : '?';
+        const cacheBusted = `${url}${sep}_cb=${Date.now()}`;
+
+        // Stage 1: direct request (fast, works if the host happens to allow CORS)
+        let img = await tryLoadImage(cacheBusted, 5000);
+        if (img) return { img, ok: true };
+
+        // Stage 2: via CORS-friendly proxy (works for hosts with no CORS support)
+        img = await tryLoadImage(buildCorsProxyUrl(url) + `&_cb=${Date.now()}`, 8000);
+        if (img) return { img, ok: true };
+
+        return { img: null, ok: false };
+      }
+
+      function drawRoundedRect(ctx, x, y, w, h, r) {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.arcTo(x + w, y, x + w, y + h, r);
+        ctx.arcTo(x + w, y + h, x, y + h, r);
+        ctx.arcTo(x, y + h, x, y, r);
+        ctx.arcTo(x, y, x + w, y, r);
+        ctx.closePath();
+      }
+
+      // Draws text centered horizontally, wrapping to at most maxLines,
+      // truncating the last line with an ellipsis if it doesn't fit.
+      function drawWrappedText(ctx, text, cx, y, maxWidth, lineHeight, maxLines) {
+        const chars = String(text).split('');
+        let lines = [];
+        let current = '';
+        for (let i = 0; i < chars.length; i++) {
+          const test = current + chars[i];
+          if (ctx.measureText(test).width > maxWidth && current) {
+            lines.push(current);
+            current = chars[i];
+            if (lines.length === maxLines) break;
+          } else {
+            current = test;
+          }
+        }
+        if (lines.length < maxLines && current) lines.push(current);
+
+        if (lines.length === maxLines) {
+          let last = lines[maxLines - 1];
+          while (ctx.measureText(last + '…').width > maxWidth && last.length > 0) {
+            last = last.slice(0, -1);
+          }
+          lines[maxLines - 1] = last + '…';
+        }
+
+        lines.forEach((line, i) => {
+          ctx.fillText(line, cx, y + i * lineHeight);
+        });
+      }
+
+      // Draws the full want-list canvas. `loaded` must be a same-length array
+      // of {img, ok} matching wantCards (from loadImageForCanvas). Passing an
+      // all-{ok:false} array forces a text-only fallback render.
+      // Draws one card cell (photo, rarity badge, ID, name) at the given
+      // top-left position. Shared by both the 求 and 譲 sections below.
+      function drawCardCell(ctx, card, loadedEntry, x, y, cellW, cellH) {
+        ctx.fillStyle = '#ffffff';
+        drawRoundedRect(ctx, x + 6, y + 6, cellW - 12, cellH - 12, 14);
+        ctx.fill();
+        ctx.strokeStyle = '#f3e5f5';
+        ctx.lineWidth = 1.5;
+        drawRoundedRect(ctx, x + 6, y + 6, cellW - 12, cellH - 12, 14);
+        ctx.stroke();
+
+        const imgX = x + 16, imgY = y + 16, imgW = cellW - 32, imgH = 168;
+        const { img, ok } = loadedEntry;
+
+        ctx.save();
+        drawRoundedRect(ctx, imgX, imgY, imgW, imgH, 10);
+        ctx.clip();
+        ctx.fillStyle = '#faf5fc';
+        ctx.fillRect(imgX, imgY, imgW, imgH);
+        if (ok && img) {
+          const scale = Math.min(imgW / img.width, imgH / img.height);
+          const dw = img.width * scale, dh = img.height * scale;
+          ctx.drawImage(img, imgX + (imgW - dw) / 2, imgY + (imgH - dh) / 2, dw, dh);
+        } else {
+          ctx.fillStyle = '#ab47bc';
+          ctx.font = 'bold 15px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('Aikatsu!', imgX + imgW / 2, imgY + imgH / 2);
+        }
+        ctx.restore();
+
+        // Rarity badge
+        const rarity = getRarity(card);
+        if (rarity) {
+          ctx.fillStyle = RARITY_COLORS[rarity] || '#9e96b8';
+          drawRoundedRect(ctx, imgX + 6, imgY + 6, 38, 20, 8);
+          ctx.fill();
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 12px "Outfit", sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(RARITY_LABELS[rarity], imgX + 6 + 19, imgY + 6 + 14);
+        }
+
+        // Card ID
+        ctx.fillStyle = '#ef4fa8';
+        ctx.font = 'bold 14px "Outfit", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(card.id, x + cellW / 2, imgY + imgH + 22);
+
+        // Card name (up to 2 lines)
+        ctx.fillStyle = '#2d264b';
+        ctx.font = '600 13px "M PLUS Rounded 1c", sans-serif';
+        drawWrappedText(ctx, card.name, x + cellW / 2, imgY + imgH + 40, cellW - 28, 17, 2);
+      }
+
+      const TRADE_IMAGE_CELL_W = 200;
+      const TRADE_IMAGE_CELL_H = 270;
+
+      // How tall a section (header + card grid, or an "empty" note) will be.
+      function measureSectionHeight(cards) {
+        const sectionHeaderH = 40;
+        if (cards.length === 0) return sectionHeaderH + 34;
+        const cols = Math.min(cards.length, 4);
+        const rows = Math.ceil(cards.length / cols);
+        return sectionHeaderH + rows * TRADE_IMAGE_CELL_H + 10;
+      }
+
+      // Draws a section title + its card grid (or an "（未指定）" note when
+      // empty) starting at startY. Returns the total height consumed.
+      function drawTradeSection(ctx, title, accentColor, cards, loaded, startY, padding) {
+        ctx.fillStyle = accentColor;
+        ctx.font = 'bold 21px "M PLUS Rounded 1c", sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(title, padding, startY + 26);
+
+        const sectionHeaderH = 40;
+        if (cards.length === 0) {
+          ctx.fillStyle = '#9e96b8';
+          ctx.font = '600 14px "M PLUS Rounded 1c", sans-serif';
+          ctx.fillText('（未指定）', padding, startY + sectionHeaderH + 10);
+          return sectionHeaderH + 34;
+        }
+
+        const cols = Math.min(cards.length, 4);
+        const rows = Math.ceil(cards.length / cols);
+        const gridY = startY + sectionHeaderH;
+
+        cards.forEach((card, i) => {
+          const col = i % cols;
+          const row = Math.floor(i / cols);
+          const x = padding + col * TRADE_IMAGE_CELL_W;
+          const y = gridY + row * TRADE_IMAGE_CELL_H;
+          drawCardCell(ctx, card, loaded[i], x, y, TRADE_IMAGE_CELL_W, TRADE_IMAGE_CELL_H);
+        });
+
+        return sectionHeaderH + rows * TRADE_IMAGE_CELL_H + 10;
+      }
+
+      // Renders the combined "求（欲しい）/ 譲（あげます）" trade image —
+      // two stacked sections so it reads as "these I want, these I can give".
+      function renderTradeImageCanvas(wantCards, giveCards, loadedWant, loadedGive, currentSeries) {
+        const padding = 24;
+        const titleH = 78;
+        const sectionGap = 22;
+        const footerH = 44;
+
+        const wantCols = Math.max(Math.min(wantCards.length, 4), 1);
+        const giveCols = Math.max(Math.min(giveCards.length, 4), 1);
+        const maxCols = Math.max(wantCols, giveCols);
+        const canvasWidth = maxCols * TRADE_IMAGE_CELL_W + padding * 2;
+
+        const wantSectionH = measureSectionHeight(wantCards);
+        const giveSectionH = measureSectionHeight(giveCards);
+
+        const canvas = document.createElement('canvas');
+        canvas.width = canvasWidth;
+        canvas.height = padding + titleH + wantSectionH + sectionGap + giveSectionH + footerH + padding;
+        const ctx = canvas.getContext('2d');
+
+        // Background
+        const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+        grad.addColorStop(0, '#fff8fb');
+        grad.addColorStop(1, '#f3e9fb');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Title
+        ctx.fillStyle = '#2d264b';
+        ctx.font = 'bold 28px "M PLUS Rounded 1c", sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText('💌 アイカツ！カード交換募集', padding, padding + 30);
+
+        ctx.fillStyle = '#6b6480';
+        ctx.font = '600 16px "M PLUS Rounded 1c", sans-serif';
+        ctx.fillText(`${currentSeries ? currentSeries.name : ''}　求${wantCards.length}枚／譲${giveCards.length}枚`, padding, padding + 56);
+
+        let cursorY = padding + titleH;
+
+        cursorY += drawTradeSection(ctx, `💖 求（欲しい）`, '#ab47bc', wantCards, loadedWant, cursorY, padding);
+        cursorY += sectionGap;
+        drawTradeSection(ctx, `🎁 譲（あげます）`, '#c98a00', giveCards, loadedGive, cursorY, padding);
+
+        // Footer
+        ctx.fillStyle = '#ab47bc';
+        ctx.font = '600 14px "M PLUS Rounded 1c", sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText('#アイカツ #アイカツトレード #アイカツカード', padding, canvas.height - 16);
+
+        return canvas;
+      }
+
+      // Same "譲" selection logic as generateShareText: prefer cards marked
+      // "譲" and only fall back to the general "交換可能" list if nothing
+      // has been marked "譲" yet, so the image and the tweet text always
+      // agree on what's being offered.
+      function getGiveCardsForShare() {
+        const starred = [];
+        const allTrade = [];
+        currentCardList.forEach(card => {
+          const st = userState[card.id];
+          if (st) {
+            if (st.star) starred.push(card);
+            if (st.trade) allTrade.push(card);
+          }
+        });
+        return starred.length > 0 ? starred : allTrade;
+      }
+
+      async function generateWantListImage() {
+        const wantCards = currentCardList.filter(c => userState[c.id] && userState[c.id].want);
+        const giveCards = getGiveCardsForShare();
+        wantListImageBlob = null;
+        downloadWantImageBtn.disabled = true;
+        shareWantImageBtn.disabled = true;
+
+        if (wantCards.length === 0 && giveCards.length === 0) {
+          shareImageEmptyState.style.display = 'block';
+          shareImageEmptyState.textContent = '「求」または「譲」にチェックしたカードがありません';
+          wantListImagePreview.style.display = 'none';
+          return;
+        }
+
+        // Show a visible "generating…" state immediately so the button
+        // press always gives feedback, even while images are loading.
+        shareImageEmptyState.style.display = 'block';
+        shareImageEmptyState.textContent = '画像を作成しています…';
+        wantListImagePreview.style.display = 'none';
+
+        const currentSeries = seriesList[currentSeriesIndex];
+
+        try {
+          // Preload all card images in parallel (failures/timeouts fall back to a placeholder)
+          const [loadedWant, loadedGive] = await Promise.all([
+            Promise.all(wantCards.map(c => loadImageForCanvas(c.image))),
+            Promise.all(giveCards.map(c => loadImageForCanvas(c.image)))
+          ]);
+          let canvas = renderTradeImageCanvas(wantCards, giveCards, loadedWant, loadedGive, currentSeries);
+
+          let dataUrl;
+          try {
+            dataUrl = canvas.toDataURL('image/png');
+          } catch (e) {
+            // Canvas got tainted (the image host doesn't allow CORS canvas
+            // access even though the browser let the <img> load). Rebuild
+            // using text-only placeholders so export always succeeds.
+            console.warn('Canvas tainted, falling back to text-only image:', e);
+            const placeholdersWant = loadedWant.map(() => ({ img: null, ok: false }));
+            const placeholdersGive = loadedGive.map(() => ({ img: null, ok: false }));
+            canvas = renderTradeImageCanvas(wantCards, giveCards, placeholdersWant, placeholdersGive, currentSeries);
+            dataUrl = canvas.toDataURL('image/png');
+            showToast('カード画像が読み込めなかったため、簡易表示で作成しました');
+          }
+
+          shareImageEmptyState.style.display = 'none';
+          wantListImagePreview.src = dataUrl;
+          wantListImagePreview.style.display = 'block';
+
+          canvas.toBlob((blob) => {
+            wantListImageBlob = blob;
+            downloadWantImageBtn.disabled = !blob;
+            shareWantImageBtn.disabled = !blob;
+            if (!blob) {
+              showToast('画像の生成に失敗しました。もう一度お試しください');
+            }
+          }, 'image/png');
+        } catch (e) {
+          // Absolute safety net: whatever went wrong, tell the user instead
+          // of leaving the preview stuck on "generating…" forever.
+          console.error('generateWantListImage failed:', e);
+          shareImageEmptyState.style.display = 'block';
+          shareImageEmptyState.textContent = '画像の生成に失敗しました。もう一度お試しください';
+          wantListImagePreview.style.display = 'none';
+          showToast('画像の生成に失敗しました');
+        }
+      }
+
+      downloadWantImageBtn.addEventListener('click', () => {
+        if (!wantListImageBlob) return;
+        const currentSeries = seriesList[currentSeriesIndex];
+        const safeName = (currentSeries ? currentSeries.name : 'aikatsu').replace(/[\\/:*?"<>|]/g, '');
+        const url = URL.createObjectURL(wantListImageBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `交換募集カード_${safeName}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('画像をダウンロードしました');
+      });
+
+      shareWantImageBtn.addEventListener('click', async () => {
+        if (!wantListImageBlob) return;
+        const file = new File([wantListImageBlob], 'trade_cards.png', { type: 'image/png' });
+        // The itemized card list lives in the image itself, so the
+        // accompanying text is just a short, always-safe-length caption —
+        // this is what makes the image the practical way to post when
+        // there are too many cards for X's character limit.
+        const shareText = generateShortCaption();
+
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({
+              files: [file],
+              title: 'アイカツ！カード交換募集',
+              text: shareText
+            });
+            return;
+          } catch (e) {
+            if (e && e.name === 'AbortError') return; // user cancelled share sheet
+            console.warn('navigator.share failed, falling back:', e);
+          }
+        }
+
+        // Browsers on PC etc. can't attach a local file to X's web composer
+        // (X's intent URL only accepts text). As the best available
+        // alternative, download the image and open the composer with the
+        // same short caption pre-filled, so the user only has to attach
+        // the image that was just downloaded.
+        downloadWantImageBtn.click();
+        const text = encodeURIComponent(shareText);
+        window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank', 'noopener,noreferrer');
+        showToast('画像をダウンロードしました。投稿画面に画像を添付してください');
+      });
+
+      // --- Data Backup & Restore Modal ---
+      openBackupModalBtn.addEventListener('click', () => backupModalBackdrop.classList.add('is-open'));
+      closeBackupModalBtn.addEventListener('click', () => backupModalBackdrop.classList.remove('is-open'));
+      backupModalBackdrop.addEventListener('click', (e) => {
+        if (e.target === backupModalBackdrop) backupModalBackdrop.classList.remove('is-open');
+      });
+
+      exportDataBtn.addEventListener('click', () => {
+        const exportObj = {
+          userState: userState,
+          exportedAt: new Date().toISOString()
+        };
+        const dataStr = JSON.stringify(exportObj, null, 2);
+        const blob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const now = new Date();
+        const dateStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `aikatsu_backup_${dateStr}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('バックアップファイルをダウンロードしました');
+      });
+
+      importDataBtn.addEventListener('click', () => importFileInput.click());
+
+      importFileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          try {
+            const imported = JSON.parse(event.target.result);
+            if (imported && typeof imported === 'object') {
+              if (imported.userState) {
+                userState = imported.userState;
+              } else {
+                userState = imported;
+              }
+              saveUserState();
+              backupModalBackdrop.classList.remove('is-open');
+              showToast('バックアップから正常に復元しました！');
+              initSeriesData();
+            } else {
+              alert('無効なファイル形式です。');
+            }
+          } catch (err) {
+            alert('JSONファイルの読み込みに失敗しました: ' + err.message);
+          }
+        };
+        reader.readAsText(file);
+        importFileInput.value = '';
+      });
+
+      resetAllDataBtn.addEventListener('click', () => {
+        if (confirm('【注意】本当にすべてのチェックデータを削除しますか？この操作は取り消せません。')) {
+          userState = {};
+          localStorage.removeItem(STORAGE_KEY);
+          backupModalBackdrop.classList.remove('is-open');
+          showToast('全データを初期化しました');
+          initSeriesData();
+        }
+      });
+
+      // --- Keyboard navigation for modal ---
+      window.addEventListener('keydown', (e) => {
+        if (imageModalBackdrop.classList.contains('is-open')) {
+          if (e.key === 'Escape') imageModalBackdrop.classList.remove('is-open');
+          if (e.key === 'ArrowLeft') navigateModal(-1);
+          if (e.key === 'ArrowRight') navigateModal(1);
+        } else if (shareModalBackdrop.classList.contains('is-open') && e.key === 'Escape') {
+          shareModalBackdrop.classList.remove('is-open');
+        } else if (backupModalBackdrop.classList.contains('is-open') && e.key === 'Escape') {
+          backupModalBackdrop.classList.remove('is-open');
+        }
+      });
+
+      // --- Main Render Lifecycle ---
+      function renderApp() {
+        updateDashboardStats();
+        renderCards();
+      }
+
+      // --- Initialize App ---
+      initTheme();
+      initSeriesData();
+
+    })();
+  </script>
+</body>
+</html>
