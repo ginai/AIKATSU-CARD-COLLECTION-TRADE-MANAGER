@@ -1,0 +1,1 @@
+https://ginai.github.io/AIKATSU-CARD-COLLECTION-TRADE-MANAGER/
