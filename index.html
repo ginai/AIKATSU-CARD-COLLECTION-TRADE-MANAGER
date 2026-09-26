@@ -115,6 +115,91 @@
     }
 
     /* ==========================================================
+       Hero Banner (decorative, non-sticky — scrolls away)
+       ========================================================== */
+    .hero-banner {
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(115deg, #ff8fc9 0%, #ef4fa8 28%, #c8a2f0 60%, #7ec8f5 100%);
+      padding: 22px 20px 34px;
+      text-align: center;
+      isolation: isolate;
+    }
+    .hero-banner::after {
+      /* Soft scalloped edge along the bottom of the banner */
+      content: '';
+      position: absolute;
+      left: 0; right: 0; bottom: -1px;
+      height: 22px;
+      background: var(--bg-base);
+      -webkit-mask-image: radial-gradient(circle at 12px 0, transparent 12px, #000 12.5px);
+      mask-image: radial-gradient(circle at 12px 0, transparent 12px, #000 12.5px);
+      -webkit-mask-size: 24px 22px;
+      mask-size: 24px 22px;
+      -webkit-mask-repeat: repeat-x;
+      mask-repeat: repeat-x;
+    }
+    .hero-decor {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .hero-decor .spark {
+      position: absolute;
+      color: #fff;
+      opacity: 0.75;
+      filter: drop-shadow(0 1px 3px rgba(0,0,0,0.08));
+    }
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .hero-crown {
+      font-size: 1.6rem;
+      display: block;
+      margin-bottom: 2px;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
+    }
+    .hero-title {
+      font-family: var(--font-main);
+      font-weight: 900;
+      font-size: clamp(1.6rem, 5vw, 2.5rem);
+      color: #fff;
+      letter-spacing: 1px;
+      line-height: 1.15;
+      margin: 0;
+      -webkit-text-stroke: 2px #ef4fa8;
+      text-shadow:
+        3px 4px 0 rgba(126, 58, 140, 0.35),
+        0 6px 14px rgba(80, 30, 90, 0.25);
+    }
+    .hero-title .hero-title-accent {
+      display: inline-block;
+      transform: rotate(-3deg);
+    }
+    .hero-tagline {
+      margin-top: 8px;
+      font-size: clamp(0.78rem, 2.2vw, 0.95rem);
+      font-weight: 700;
+      color: rgba(255,255,255,0.95);
+      letter-spacing: 0.5px;
+      text-shadow: 0 1px 4px rgba(80,30,90,0.3);
+    }
+
+    @media (max-width: 600px) {
+      .hero-banner { padding: 16px 16px 26px; }
+      .hero-crown { font-size: 1.3rem; }
+      .hero-title {
+        font-size: clamp(1.15rem, 6.2vw, 1.5rem);
+        letter-spacing: 0;
+        -webkit-text-stroke: 1.2px #ef4fa8;
+      }
+    }
+
+    /* ==========================================================
        Header Styles
        ========================================================== */
     .app-header {
@@ -677,7 +762,7 @@
       flex-shrink: 0;
       min-width: 44px;
     }
-    .filter-detail-heading {
+    .filter-detail-toggle {
       display: flex;
       align-items: center;
       gap: 8px;
@@ -685,8 +770,43 @@
       font-weight: 800;
       color: var(--primary);
       margin-top: 4px;
-      padding-top: 10px;
+      padding: 10px 4px 4px;
+      border: none;
       border-top: 1px dashed var(--border-color);
+      background: none;
+      cursor: pointer;
+      font-family: var(--font-main);
+      width: 100%;
+      text-align: left;
+      justify-content: space-between;
+    }
+    .filter-detail-toggle:hover {
+      color: var(--primary-hover);
+    }
+    .filter-detail-arrow {
+      flex-shrink: 0;
+      transition: transform 0.25s ease;
+    }
+    .filter-detail-toggle[aria-expanded="true"] .filter-detail-arrow {
+      transform: rotate(180deg);
+    }
+    .filter-detail-box {
+      display: grid;
+      grid-template-rows: 0fr;
+      transition: grid-template-rows 0.28s ease;
+    }
+    .filter-detail-box.is-open {
+      grid-template-rows: 1fr;
+    }
+    .filter-detail-inner {
+      min-height: 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .filter-detail-box.is-open .filter-detail-inner {
+      padding-top: 10px;
     }
     .filter-pill {
       border: 1px solid var(--border-color);
@@ -1224,7 +1344,13 @@
       border-radius: var(--radius-md);
       background: var(--bg-surface-elevated);
       display: flex;
-      align-items: center;
+      /* align-items/justify-content: flex-start (not center) — with center,
+         an image taller than the box overflows equally above and below,
+         and scrollTop can never go negative, so the top of the image
+         (the title) becomes permanently unreachable no matter how far up
+         the user scrolls. flex-start anchors the image at the top so the
+         whole thing is reachable by scrolling down from the start. */
+      align-items: flex-start;
       justify-content: center;
       margin-bottom: 12px;
     }
@@ -1396,7 +1522,28 @@
 <body>
 
   <!-- ========================================================
-       Header
+       Hero Banner (decorative, scrolls away)
+       ======================================================== -->
+  <div class="hero-banner">
+    <div class="hero-decor" aria-hidden="true">
+      <svg class="spark" style="top:14%; left:6%; width:22px; height:22px;" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0l2.4 8.6L23 11l-8.6 2.4L12 22l-2.4-8.6L1 11l8.6-2.4z"/></svg>
+      <svg class="spark" style="top:60%; left:3%; width:14px; height:14px; opacity:0.6;" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0l2.4 8.6L23 11l-8.6 2.4L12 22l-2.4-8.6L1 11l8.6-2.4z"/></svg>
+      <svg class="spark" style="top:20%; right:7%; width:18px; height:18px;" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0l2.4 8.6L23 11l-8.6 2.4L12 22l-2.4-8.6L1 11l8.6-2.4z"/></svg>
+      <svg class="spark" style="top:64%; right:12%; width:24px; height:24px; opacity:0.55;" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0l2.4 8.6L23 11l-8.6 2.4L12 22l-2.4-8.6L1 11l8.6-2.4z"/></svg>
+      <svg class="spark" style="top:8%; left:32%; width:12px; height:12px; opacity:0.5;" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0l2.4 8.6L23 11l-8.6 2.4L12 22l-2.4-8.6L1 11l8.6-2.4z"/></svg>
+      <svg class="spark" style="top:12%; right:30%; width:12px; height:12px; opacity:0.5;" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0l2.4 8.6L23 11l-8.6 2.4L12 22l-2.4-8.6L1 11l8.6-2.4z"/></svg>
+      <svg class="spark" style="bottom:10%; left:18%; width:16px; height:16px; opacity:0.55;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 0l2.4 8.6L23 11l-8.6 2.4L12 22l-2.4-8.6L1 11l8.6-2.4z"/></svg>
+      <svg class="spark" style="bottom:14%; right:20%; width:16px; height:16px; opacity:0.55;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 0l2.4 8.6L23 11l-8.6 2.4L12 22l-2.4-8.6L1 11l8.6-2.4z"/></svg>
+    </div>
+    <div class="hero-content">
+      <span class="hero-crown">👑</span>
+      <h1 class="hero-title">アイカツ<span class="hero-title-accent">！</span>カードチェッカー</h1>
+      <p class="hero-tagline">～集めて、交換して、コンプリート！～</p>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       Header (slim, sticky action bar)
        ======================================================== -->
   <header class="app-header">
     <div class="header-inner">
@@ -1407,7 +1554,7 @@
         <div class="brand-logo-wrap">
           <div class="brand-icon-star">★</div>
           <div class="brand-text">
-            <h1 class="brand-title">アイカツ！カードチェッカー</h1>
+            <h2 class="brand-title">アイカツ！カードチェッカー</h2>
             <span class="brand-subtitle">AIKATSU! CARD COLLECTION & TRADE MANAGER</span>
           </div>
         </div>
@@ -1563,7 +1710,13 @@
             </div>
           </div>
 
-          <div class="filter-detail-heading">🔍 くわしくさがす</div>
+          <button class="filter-detail-toggle" id="filterDetailToggle" type="button" aria-expanded="false" aria-controls="filterDetailBox">
+            <span>🔍 くわしくさがす（タイプ・レアリティ・カテゴリ）</span>
+            <svg class="filter-detail-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+
+          <div class="filter-detail-box" id="filterDetailBox">
+          <div class="filter-detail-inner">
 
           <div class="filter-group-block">
             <span class="filter-group-label">タイプ</span>
@@ -1600,6 +1753,9 @@
               <button class="filter-pill" data-filter-part="accessory">アクセサリー</button>
               <button class="filter-pill" data-filter-part="unknown" title="カード名が未入力で部位を判定できないカード">不明</button>
             </div>
+          </div>
+
+          </div>
           </div>
         </div>
       </section>
@@ -1659,19 +1815,15 @@
         <div class="share-image-section">
           <p style="font-size: 0.95rem; font-weight: 800; margin-bottom: 6px;">🖼️ Xへの募集画像を作成（推奨）</p>
           <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
-            チェックした「求」（欲しい）と「譲」（あげます）のカードを、募集内容ごと1枚の画像にまとめます。Xは文字数制限が厳しいので、カードが多いときはこの画像を投稿するのがおすすめです。「譲」をチェックしたカードがあれば画像にはその「譲」カードだけが載ります（未指定の場合は「交換可能」の一覧を使用）。
+            チェックした「求」（欲しい）と「譲」（あげます）のカードを、募集内容ごと1枚の画像にまとめます。Xは文字数制限が厳しいので、カードが多いときはダウンロードしてこの画像を投稿に添付するのがおすすめです。「譲」をチェックしたカードがあれば画像にはその「譲」カードだけが載ります（未指定の場合は「交換可能」の一覧を使用）。
           </p>
           <div class="share-image-preview-wrap" id="shareImagePreviewWrap">
             <div class="share-image-empty" id="shareImageEmptyState">「求」または「譲」にチェックしたカードがありません</div>
             <img class="share-image-preview" id="wantListImagePreview" alt="求・譲カードリスト画像プレビュー" style="display:none;">
           </div>
           <div class="share-image-actions">
-            <button class="btn btn-secondary" id="downloadWantImageBtn" disabled>
+            <button class="btn btn-primary" id="downloadWantImageBtn" disabled style="flex: 1 1 100%;">
               💾 画像をダウンロード
-            </button>
-            <button class="btn btn-primary" id="shareWantImageBtn" disabled>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-              この画像でXに投稿
             </button>
           </div>
         </div>
@@ -1807,6 +1959,13 @@
       const partsFilterGroup = document.getElementById('partsFilterGroup');
       const rarityFilterGroup = document.getElementById('rarityFilterGroup');
       const typeFilterGroup = document.getElementById('typeFilterGroup');
+      const filterDetailToggle = document.getElementById('filterDetailToggle');
+      const filterDetailBox = document.getElementById('filterDetailBox');
+
+      filterDetailToggle.addEventListener('click', () => {
+        const isOpen = filterDetailBox.classList.toggle('is-open');
+        filterDetailToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      });
 
       // Modals
       const imageModalBackdrop = document.getElementById('imageModalBackdrop');
@@ -1831,7 +1990,6 @@
       const shareImageEmptyState = document.getElementById('shareImageEmptyState');
       const wantListImagePreview = document.getElementById('wantListImagePreview');
       const downloadWantImageBtn = document.getElementById('downloadWantImageBtn');
-      const shareWantImageBtn = document.getElementById('shareWantImageBtn');
       let wantListImageBlob = null;
 
       const backupModalBackdrop = document.getElementById('backupModalBackdrop');
@@ -1851,6 +2009,27 @@
       const sidebarBackdrop = document.getElementById('sidebarBackdrop');
 
       // --- Helper: Determine Clothing Part from Card Name ---
+      // Category badge/label lookup, shared with getCategoryInfo() below.
+      const CATEGORY_META = {
+        tops: { label: 'トップス', class: 'badge-tops' },
+        bottoms: { label: 'ボトムス', class: 'badge-bottoms' },
+        shoes: { label: 'シューズ', class: 'badge-shoes' },
+        tops_bottoms: { label: 'トップス&ボトムス', class: 'badge-tops-bottoms' },
+        accessory: { label: 'アクセサリー', class: 'badge-accessory' },
+        unknown: { label: '不明', class: 'badge-unknown' }
+      };
+
+      // Returns a card's category info. An explicit `card.category` field
+      // (e.g. filled in via the spreadsheet workflow) always wins — no
+      // guessing needed once real data is provided. Only falls back to
+      // guessing from the name when no explicit category is set.
+      function getCategoryInfo(card) {
+        if (card && card.category && CATEGORY_META[card.category]) {
+          return { type: card.category, ...CATEGORY_META[card.category] };
+        }
+        return detectCardPart(card ? card.name : '');
+      }
+
       function detectCardPart(name) {
         if (!name) return { type: 'unknown', label: '不明', class: 'badge-unknown' };
 
@@ -2125,7 +2304,7 @@
           }
 
           if (filterPart !== 'all') {
-            const partInfo = detectCardPart(card.name);
+            const partInfo = getCategoryInfo(card);
             if (partInfo.type !== filterPart) return false;
           }
 
@@ -2180,7 +2359,7 @@
 
         filtered.forEach(card => {
           const state = getCardState(card.id);
-          const partInfo = detectCardPart(card.name);
+          const partInfo = getCategoryInfo(card);
 
           const cardEl = document.createElement('div');
           cardEl.className = `card-item ${state.notHave ? 'is-nothave' : 'is-have'} ${state.want ? 'is-want' : ''}`;
@@ -2678,6 +2857,36 @@
         ctx.closePath();
       }
 
+      // Draws a simple 4-point sparkle/star shape, used to decorate the
+      // banner header — matching the app's own hero-banner styling.
+      function drawSparkle(ctx, cx, cy, size, color, opacity) {
+        ctx.save();
+        ctx.globalAlpha = opacity;
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - size);
+        ctx.quadraticCurveTo(cx + size * 0.15, cy - size * 0.15, cx + size, cy);
+        ctx.quadraticCurveTo(cx + size * 0.15, cy + size * 0.15, cx, cy + size);
+        ctx.quadraticCurveTo(cx - size * 0.15, cy + size * 0.15, cx - size, cy);
+        ctx.quadraticCurveTo(cx - size * 0.15, cy - size * 0.15, cx, cy - size);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // Draws text with a thick colored outline behind a solid fill — the
+      // canvas equivalent of the app's own CSS `-webkit-text-stroke` bubble
+      // title look, so the generated image matches the app's branding.
+      function drawOutlinedText(ctx, text, x, y, fillColor, strokeColor, strokeWidth) {
+        ctx.lineJoin = 'round';
+        ctx.miterLimit = 2;
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = strokeWidth;
+        ctx.strokeText(text, x, y);
+        ctx.fillStyle = fillColor;
+        ctx.fillText(text, x, y);
+      }
+
       // Draws text centered horizontally, wrapping to at most maxLines,
       // truncating the last line with an ellipsis if it doesn't fit.
       function drawWrappedText(ctx, text, cx, y, maxWidth, lineHeight, maxLines) {
@@ -2714,13 +2923,20 @@
       // all-{ok:false} array forces a text-only fallback render.
       // Draws one card cell (photo, rarity badge, ID, name) at the given
       // top-left position. Shared by both the 求 and 譲 sections below.
-      function drawCardCell(ctx, card, loadedEntry, x, y, cellW, cellH) {
+      function drawCardCell(ctx, card, loadedEntry, x, y, cellW, cellH, accentColor) {
+        // Soft colored glow behind the card, tinted to the section's accent
+        ctx.save();
+        ctx.shadowColor = accentColor + '55';
+        ctx.shadowBlur = 14;
+        ctx.shadowOffsetY = 4;
         ctx.fillStyle = '#ffffff';
-        drawRoundedRect(ctx, x + 6, y + 6, cellW - 12, cellH - 12, 14);
+        drawRoundedRect(ctx, x + 6, y + 6, cellW - 12, cellH - 12, 16);
         ctx.fill();
-        ctx.strokeStyle = '#f3e5f5';
-        ctx.lineWidth = 1.5;
-        drawRoundedRect(ctx, x + 6, y + 6, cellW - 12, cellH - 12, 14);
+        ctx.restore();
+
+        ctx.strokeStyle = accentColor + '40';
+        ctx.lineWidth = 2;
+        drawRoundedRect(ctx, x + 6, y + 6, cellW - 12, cellH - 12, 16);
         ctx.stroke();
 
         const imgX = x + 16, imgY = y + 16, imgW = cellW - 32, imgH = 168;
@@ -2729,17 +2945,27 @@
         ctx.save();
         drawRoundedRect(ctx, imgX, imgY, imgW, imgH, 10);
         ctx.clip();
-        ctx.fillStyle = '#faf5fc';
-        ctx.fillRect(imgX, imgY, imgW, imgH);
         if (ok && img) {
+          ctx.fillStyle = '#faf5fc';
+          ctx.fillRect(imgX, imgY, imgW, imgH);
           const scale = Math.min(imgW / img.width, imgH / img.height);
           const dw = img.width * scale, dh = img.height * scale;
           ctx.drawImage(img, imgX + (imgW - dw) / 2, imgY + (imgH - dh) / 2, dw, dh);
         } else {
+          // Cute placeholder: soft tinted gradient + sparkle motif, instead
+          // of plain "Aikatsu!" text on a flat box.
+          const grad = ctx.createLinearGradient(imgX, imgY, imgX, imgY + imgH);
+          grad.addColorStop(0, '#fbe7f5');
+          grad.addColorStop(1, '#ece2fb');
+          ctx.fillStyle = grad;
+          ctx.fillRect(imgX, imgY, imgW, imgH);
+          drawSparkle(ctx, imgX + imgW / 2, imgY + imgH / 2 - 14, 22, '#ef4fa8', 0.55);
+          drawSparkle(ctx, imgX + imgW / 2 - 34, imgY + imgH / 2 + 22, 12, '#c8a2f0', 0.5);
+          drawSparkle(ctx, imgX + imgW / 2 + 34, imgY + imgH / 2 + 22, 12, '#7ec8f5', 0.5);
           ctx.fillStyle = '#ab47bc';
-          ctx.font = 'bold 15px sans-serif';
+          ctx.font = 'bold 14px "M PLUS Rounded 1c", sans-serif';
           ctx.textAlign = 'center';
-          ctx.fillText('Aikatsu!', imgX + imgW / 2, imgY + imgH / 2);
+          ctx.fillText('Aikatsu!', imgX + imgW / 2, imgY + imgH / 2 + 36);
         }
         ctx.restore();
 
@@ -2772,22 +2998,31 @@
 
       // How tall a section (header + card grid, or an "empty" note) will be.
       function measureSectionHeight(cards) {
-        const sectionHeaderH = 40;
+        const sectionHeaderH = 48;
         if (cards.length === 0) return sectionHeaderH + 34;
         const cols = Math.min(cards.length, 4);
         const rows = Math.ceil(cards.length / cols);
         return sectionHeaderH + rows * TRADE_IMAGE_CELL_H + 10;
       }
 
-      // Draws a section title + its card grid (or an "（未指定）" note when
-      // empty) starting at startY. Returns the total height consumed.
-      function drawTradeSection(ctx, title, accentColor, cards, loaded, startY, padding) {
+      // Draws a section title as a rounded "pill" badge + its card grid (or
+      // an "（未指定）" note when empty) starting at startY. Returns the
+      // total height consumed.
+      function drawTradeSection(ctx, title, accentColor, cards, loaded, startY, padding, canvasWidth) {
+        ctx.font = 'bold 18px "M PLUS Rounded 1c", sans-serif';
+        const pillPadX = 18;
+        const pillW = ctx.measureText(title).width + pillPadX * 2;
+        const pillH = 34;
         ctx.fillStyle = accentColor;
-        ctx.font = 'bold 21px "M PLUS Rounded 1c", sans-serif';
+        drawRoundedRect(ctx, padding, startY, pillW, pillH, pillH / 2);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'left';
-        ctx.fillText(title, padding, startY + 26);
+        ctx.textBaseline = 'middle';
+        ctx.fillText(title, padding + pillPadX, startY + pillH / 2 + 1);
+        ctx.textBaseline = 'alphabetic';
 
-        const sectionHeaderH = 40;
+        const sectionHeaderH = 48;
         if (cards.length === 0) {
           ctx.fillStyle = '#9e96b8';
           ctx.font = '600 14px "M PLUS Rounded 1c", sans-serif';
@@ -2799,12 +3034,19 @@
         const rows = Math.ceil(cards.length / cols);
         const gridY = startY + sectionHeaderH;
 
+        // Center the card grid within the canvas when it's narrower than the
+        // available width (e.g. only 1-2 cards on a canvas widened to fit
+        // the title), instead of leaving it stranded on the left.
+        const gridWidth = cols * TRADE_IMAGE_CELL_W;
+        const availableWidth = canvasWidth - padding * 2;
+        const gridStartX = padding + Math.max(0, (availableWidth - gridWidth) / 2);
+
         cards.forEach((card, i) => {
           const col = i % cols;
           const row = Math.floor(i / cols);
-          const x = padding + col * TRADE_IMAGE_CELL_W;
+          const x = gridStartX + col * TRADE_IMAGE_CELL_W;
           const y = gridY + row * TRADE_IMAGE_CELL_H;
-          drawCardCell(ctx, card, loaded[i], x, y, TRADE_IMAGE_CELL_W, TRADE_IMAGE_CELL_H);
+          drawCardCell(ctx, card, loaded[i], x, y, TRADE_IMAGE_CELL_W, TRADE_IMAGE_CELL_H, accentColor);
         });
 
         return sectionHeaderH + rows * TRADE_IMAGE_CELL_H + 10;
@@ -2814,50 +3056,85 @@
       // two stacked sections so it reads as "these I want, these I can give".
       function renderTradeImageCanvas(wantCards, giveCards, loadedWant, loadedGive, currentSeries) {
         const padding = 24;
-        const titleH = 78;
+        const headerBandH = 108;
         const sectionGap = 22;
-        const footerH = 44;
+        const footerH = 50;
 
         const wantCols = Math.max(Math.min(wantCards.length, 4), 1);
         const giveCols = Math.max(Math.min(giveCards.length, 4), 1);
         const maxCols = Math.max(wantCols, giveCols);
-        const canvasWidth = maxCols * TRADE_IMAGE_CELL_W + padding * 2;
+        // Enforce a minimum width so the title/footer text never gets
+        // clipped when a section only has 1-2 cards (a narrow card grid
+        // would otherwise force the canvas narrower than the header text).
+        const MIN_CANVAS_WIDTH = 660;
+        const canvasWidth = Math.max(maxCols * TRADE_IMAGE_CELL_W + padding * 2, MIN_CANVAS_WIDTH);
 
         const wantSectionH = measureSectionHeight(wantCards);
         const giveSectionH = measureSectionHeight(giveCards);
 
         const canvas = document.createElement('canvas');
         canvas.width = canvasWidth;
-        canvas.height = padding + titleH + wantSectionH + sectionGap + giveSectionH + footerH + padding;
+        canvas.height = headerBandH + padding + wantSectionH + sectionGap + giveSectionH + footerH + padding;
         const ctx = canvas.getContext('2d');
+        const cx = canvas.width / 2;
 
-        // Background
-        const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-        grad.addColorStop(0, '#fff8fb');
-        grad.addColorStop(1, '#f3e9fb');
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        // ---- Body background (soft pastel, behind the cards) ----
+        const bodyGrad = ctx.createLinearGradient(0, headerBandH, 0, canvas.height);
+        bodyGrad.addColorStop(0, '#fff3f9');
+        bodyGrad.addColorStop(1, '#f2e9fc');
+        ctx.fillStyle = bodyGrad;
+        ctx.fillRect(0, headerBandH, canvas.width, canvas.height - headerBandH);
 
-        // Title
-        ctx.fillStyle = '#2d264b';
-        ctx.font = 'bold 28px "M PLUS Rounded 1c", sans-serif';
-        ctx.textAlign = 'left';
-        ctx.fillText('💌 アイカツ！カード交換募集', padding, padding + 30);
+        // ---- Header band (vivid gradient, matches the app's own hero banner) ----
+        const bandGrad = ctx.createLinearGradient(0, 0, canvas.width, headerBandH);
+        bandGrad.addColorStop(0, '#ff8fc9');
+        bandGrad.addColorStop(0.28, '#ef4fa8');
+        bandGrad.addColorStop(0.6, '#c8a2f0');
+        bandGrad.addColorStop(1, '#7ec8f5');
+        ctx.fillStyle = bandGrad;
+        ctx.fillRect(0, 0, canvas.width, headerBandH);
 
-        ctx.fillStyle = '#6b6480';
-        ctx.font = '600 16px "M PLUS Rounded 1c", sans-serif';
-        ctx.fillText(`${currentSeries ? currentSeries.name : ''}　求${wantCards.length}枚／譲${giveCards.length}枚`, padding, padding + 56);
+        // Scattered decorative sparkles in the band
+        const sparkleSpots = [
+          [canvas.width * 0.08, 22, 9], [canvas.width * 0.06, 62, 6],
+          [canvas.width * 0.92, 26, 8], [canvas.width * 0.94, 70, 11],
+          [canvas.width * 0.16, 86, 5], [canvas.width * 0.84, 90, 5],
+        ];
+        sparkleSpots.forEach(([sx, sy, sr]) => drawSparkle(ctx, sx, sy, sr, '#ffffff', 0.7));
 
-        let cursorY = padding + titleH;
+        // Scalloped edge along the bottom of the band (matches the app's CSS banner)
+        const scallopR = 9;
+        ctx.fillStyle = bodyGrad;
+        ctx.beginPath();
+        for (let sx = -scallopR; sx < canvas.width + scallopR; sx += scallopR * 2) {
+          ctx.moveTo(sx, headerBandH);
+          ctx.arc(sx + scallopR, headerBandH, scallopR, Math.PI, 0, true);
+        }
+        ctx.lineTo(canvas.width, headerBandH + scallopR);
+        ctx.lineTo(0, headerBandH + scallopR);
+        ctx.closePath();
+        ctx.fill();
 
-        cursorY += drawTradeSection(ctx, `💖 求（欲しい）`, '#ab47bc', wantCards, loadedWant, cursorY, padding);
+        // Title — white fill with a colored outline, echoing the app's own
+        // bubble-text logo treatment
+        ctx.textAlign = 'center';
+        ctx.font = '900 30px "M PLUS Rounded 1c", sans-serif';
+        drawOutlinedText(ctx, '💌 アイカツ！カード交換募集', cx, 46, '#ffffff', '#ef4fa8', 6);
+
+        ctx.fillStyle = 'rgba(255,255,255,0.95)';
+        ctx.font = '700 15px "M PLUS Rounded 1c", sans-serif';
+        ctx.fillText(`${currentSeries ? currentSeries.name : ''}　求${wantCards.length}枚／譲${giveCards.length}枚`, cx, 74);
+
+        let cursorY = headerBandH + padding;
+
+        cursorY += drawTradeSection(ctx, `💖 求（欲しい）`, '#ef4fa8', wantCards, loadedWant, cursorY, padding, canvasWidth);
         cursorY += sectionGap;
-        drawTradeSection(ctx, `🎁 譲（あげます）`, '#c98a00', giveCards, loadedGive, cursorY, padding);
+        drawTradeSection(ctx, `🎁 譲（あげます）`, '#ff9f43', giveCards, loadedGive, cursorY, padding, canvasWidth);
 
         // Footer
+        ctx.textAlign = 'left';
         ctx.fillStyle = '#ab47bc';
         ctx.font = '600 14px "M PLUS Rounded 1c", sans-serif';
-        ctx.textAlign = 'left';
         ctx.fillText('#アイカツ #アイカツトレード #アイカツカード', padding, canvas.height - 16);
 
         return canvas;
@@ -2885,7 +3162,6 @@
         const giveCards = getGiveCardsForShare();
         wantListImageBlob = null;
         downloadWantImageBtn.disabled = true;
-        shareWantImageBtn.disabled = true;
 
         if (wantCards.length === 0 && giveCards.length === 0) {
           shareImageEmptyState.style.display = 'block';
@@ -2932,7 +3208,6 @@
           canvas.toBlob((blob) => {
             wantListImageBlob = blob;
             downloadWantImageBtn.disabled = !blob;
-            shareWantImageBtn.disabled = !blob;
             if (!blob) {
               showToast('画像の生成に失敗しました。もう一度お試しください');
             }
@@ -2959,40 +3234,6 @@
         a.click();
         URL.revokeObjectURL(url);
         showToast('画像をダウンロードしました');
-      });
-
-      shareWantImageBtn.addEventListener('click', async () => {
-        if (!wantListImageBlob) return;
-        const file = new File([wantListImageBlob], 'trade_cards.png', { type: 'image/png' });
-        // The itemized card list lives in the image itself, so the
-        // accompanying text is just a short, always-safe-length caption —
-        // this is what makes the image the practical way to post when
-        // there are too many cards for X's character limit.
-        const shareText = generateShortCaption();
-
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          try {
-            await navigator.share({
-              files: [file],
-              title: 'アイカツ！カード交換募集',
-              text: shareText
-            });
-            return;
-          } catch (e) {
-            if (e && e.name === 'AbortError') return; // user cancelled share sheet
-            console.warn('navigator.share failed, falling back:', e);
-          }
-        }
-
-        // Browsers on PC etc. can't attach a local file to X's web composer
-        // (X's intent URL only accepts text). As the best available
-        // alternative, download the image and open the composer with the
-        // same short caption pre-filled, so the user only has to attach
-        // the image that was just downloaded.
-        downloadWantImageBtn.click();
-        const text = encodeURIComponent(shareText);
-        window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank', 'noopener,noreferrer');
-        showToast('画像をダウンロードしました。投稿画面に画像を添付してください');
       });
 
       // --- Data Backup & Restore Modal ---
