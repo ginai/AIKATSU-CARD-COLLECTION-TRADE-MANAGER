@@ -1903,9 +1903,6 @@
   <!-- Toast Container -->
   <div class="toast-container" id="toastContainer"></div>
 
-  <!-- External Fallback Master Configuration -->
-  <script src="cards_data.js"></script>
-
   <!-- ========================================================
        Application JavaScript
        ======================================================== -->
@@ -2150,17 +2147,50 @@
         }
       }
 
+      // Loads cards_data.js with a cache-busting query param so edits to the
+      // file always take effect on reload, instead of the browser silently
+      // reusing a previously-cached copy of the script (a known gotcha with
+      // plain <script src> tags, especially for file:// and simple static
+      // hosting with no cache-control headers). Resolves either way — a
+      // missing/failed cards_data.js is a normal, expected case when the
+      // app is being served with a real series_manifest.json instead.
+      function loadCardsDataScript() {
+        return new Promise((resolve) => {
+          // Remove any previously-injected copy first (initSeriesData can
+          // run more than once per page view, e.g. after a backup restore
+          // or data reset) so repeated reloads don't leave stale <script>
+          // tags piling up in the DOM.
+          const existing = document.getElementById('cardsDataScript');
+          if (existing) existing.remove();
+
+          const script = document.createElement('script');
+          script.id = 'cardsDataScript';
+          script.src = 'cards_data.js?v=' + Date.now();
+          script.onload = () => resolve(true);
+          script.onerror = () => resolve(false);
+          document.body.appendChild(script);
+        });
+      }
+
       // --- Initialize Series List (Manifest + cards_data.js + Custom) ---
       async function initSeriesData() {
         let manifest = [];
         try {
-          const res = await fetch('series_manifest.json');
+          // no-store: always re-fetch from disk/network instead of letting
+          // the browser serve a stale cached copy of a JSON file that may
+          // have just been edited.
+          const res = await fetch('series_manifest.json', { cache: 'no-store' });
           if (res.ok) {
             manifest = await res.json();
           }
         } catch (e) {
           console.warn('Could not fetch series_manifest.json (local file:// or offline), falling back to cards_data.js');
         }
+
+        // Only needed as a fallback (file:// mode, or no manifest yet), but
+        // always (re)loaded fresh so a just-edited cards_data.js is picked
+        // up immediately rather than needing a hard-refresh.
+        await loadCardsDataScript();
 
         if (!manifest || manifest.length === 0) {
           if (window.AIKATSU_SERIES_CONFIG && window.AIKATSU_SERIES_CONFIG.length > 0) {
@@ -2226,7 +2256,7 @@
         let loaded = false;
         if (series.file) {
           try {
-            const res = await fetch(series.file);
+            const res = await fetch(series.file, { cache: 'no-store' });
             if (res.ok) {
               currentCardList = await res.json();
               loaded = true;
