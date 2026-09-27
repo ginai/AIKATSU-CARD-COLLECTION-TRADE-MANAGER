@@ -1,0 +1,1570 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>アイカツ！カードデータ一括ジェネレーター</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800;900&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --primary:#ef4fa8;
+  --primary-hover:#d6348c;
+  --primary-light:#fde6f4;
+  --primary-gradient:linear-gradient(135deg,#ef4fa8 0%,#fb9fd6 55%,#c8a2f0 100%);
+  --ok:#00a844;
+  --ok-bg:#e8f5e9;
+  --warn:#ff9100;
+  --warn-bg:#fff3e0;
+  --err:#f44336;
+  --err-bg:#ffebee;
+  --bg:#f9f8fc;
+  --surface:#fff;
+  --text:#2d264b;
+  --muted:#6b6480;
+  --border:#ede7f6;
+  --radius:14px
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+
+body{
+  font-family:'M PLUS Rounded 1c',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  padding:32px 20px 80px
+}
+
+.wrap{max-width:960px;margin:auto}
+
+header{margin-bottom:28px}
+
+.eyebrow{
+  display:inline-block;
+  font-size:.78rem;
+  font-weight:800;
+  color:var(--primary);
+  background:var(--primary-light);
+  padding:5px 12px;
+  border-radius:999px;
+  margin-bottom:12px
+}
+
+h1{
+  font-size:1.7rem;
+  font-weight:900;
+  margin-bottom:8px
+}
+
+header p{
+  color:var(--muted);
+  font-size:.9rem;
+  line-height:1.7;
+  max-width:760px
+}
+
+.card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:22px;
+  margin-bottom:20px;
+  box-shadow:0 4px 16px rgba(103,58,183,.06)
+}
+
+.card h2{
+  font-size:1.02rem;
+  margin-bottom:4px
+}
+
+.sub{
+  font-size:.82rem;
+  color:var(--muted);
+  margin-bottom:16px
+}
+
+.dropzone{
+  border:2px dashed var(--border);
+  border-radius:var(--radius);
+  padding:30px 16px;
+  text-align:center;
+  color:var(--muted);
+  font-size:.88rem;
+  cursor:pointer;
+  background:var(--bg);
+  transition:.2s
+}
+
+.dropzone:hover,
+.dropzone.dragover{
+  border-color:var(--primary);
+  background:var(--primary-light);
+  color:var(--primary-hover)
+}
+
+.dropzone input{display:none}
+
+.series-list{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  margin-top:16px
+}
+
+.series-row{
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:14px;
+  display:grid;
+  grid-template-columns:1.1fr 1.2fr 90px auto;
+  gap:10px;
+  align-items:start;
+  background:var(--bg)
+}
+
+label{
+  display:block;
+  font-size:.7rem;
+  font-weight:800;
+  color:var(--muted);
+  margin-bottom:4px
+}
+
+input[type=text]{
+  width:100%;
+  padding:8px 10px;
+  border:1.5px solid var(--border);
+  border-radius:7px;
+  font-family:inherit;
+  color:var(--text);
+  background:#fff
+}
+
+input[type=text]:focus{
+  outline:none;
+  border-color:var(--primary)
+}
+
+.row-actions{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:6px
+}
+
+.status{
+  font-size:.74rem;
+  font-weight:700;
+  padding:3px 9px;
+  border-radius:999px;
+  white-space:nowrap
+}
+
+.ok{background:var(--ok-bg);color:var(--ok)}
+.warn{background:var(--warn-bg);color:#b56a00}
+.err{background:var(--err-bg);color:#c0392b}
+
+.file-name{
+  grid-column:1/-1;
+  border-top:1px dashed var(--border);
+  padding-top:7px;
+  font-size:.78rem;
+  color:var(--muted)
+}
+
+.remove{
+  border:0;
+  background:none;
+  color:var(--muted);
+  font-size:1.1rem;
+  cursor:pointer
+}
+
+.remove:hover{color:var(--err)}
+
+.empty{
+  text-align:center;
+  color:var(--muted);
+  font-size:.85rem;
+  padding:18px
+}
+
+.actions{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-top:18px
+}
+
+button.btn{
+  font-family:inherit;
+  font-weight:800;
+  font-size:.9rem;
+  padding:11px 22px;
+  border-radius:999px;
+  border:none;
+  cursor:pointer
+}
+
+.primary{
+  background:var(--primary-gradient);
+  color:#fff;
+  box-shadow:0 4px 14px rgba(239,79,168,.35)
+}
+
+button:disabled{
+  opacity:.5;
+  cursor:not-allowed
+}
+
+.secondary{
+  background:#fff;
+  color:var(--text);
+  border:1.5px solid var(--border)!important
+}
+
+.summary{
+  font-size:.85rem;
+  color:var(--muted)
+}
+
+.summary strong{color:var(--text)}
+
+.messages{
+  margin-top:12px;
+  display:flex;
+  flex-direction:column;
+  gap:6px
+}
+
+.msg{
+  font-size:.82rem;
+  padding:8px 12px;
+  border-radius:8px
+}
+
+.msg.err{background:var(--err-bg);color:#c0392b}
+.msg.warn{background:var(--warn-bg);color:#b56a00}
+.msg.ok{background:var(--ok-bg);color:#1b7a34}
+
+.output-block{
+  margin-top:18px
+}
+
+.output-block h3{
+  font-size:.88rem;
+  margin-bottom:8px
+}
+
+textarea{
+  width:100%;
+  height:300px;
+  font-family:'Outfit',Consolas,monospace;
+  font-size:.76rem;
+  line-height:1.5;
+  padding:14px;
+  border:1.5px solid var(--border);
+  border-radius:8px;
+  background:#fbfaff;
+  color:var(--text);
+  resize:vertical
+}
+
+#outputSection{
+  display:none
+}
+
+@media(max-width:680px){
+  .series-row{
+    grid-template-columns:1fr
+  }
+
+  .row-actions{
+    flex-direction:row;
+    align-items:center;
+    justify-content:space-between
+  }
+
+  .file-name{
+    grid-column:1
+  }
+}
+</style>
+
+</head>
+
+<body>
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">🧩 開発ツール</div>
+  <h1>アイカツ！カードデータ一括ジェネレーター</h1>
+
+  <p>
+    CSVを読み込むだけで、カードデータとシリーズ一覧をまとめて生成します。
+  </p>
+
+  <p>
+    <strong>CSV → cards_data.js ＋ series_manifest.json</strong>
+    の2ファイルを一括生成できます。
+  </p>
+</header>
+
+<section class="card">
+
+<h2>① CSVファイルを追加</h2>
+
+<div class="sub">
+1シリーズにつき1CSVを追加できます。複数CSVをまとめて追加することも可能です。
+</div>
+
+<div class="dropzone" id="dropzone">
+  <div><strong>ここにCSVファイルをドラッグ＆ドロップ</strong></div>
+  <div style="margin-top:4px">
+    またはクリックして選択（複数選択可）
+  </div>
+
+<input
+type="file"
+id="fileInput"
+accept=".csv,text/csv"
+multiple
+
+>
+
+</div>
+
+<div class="series-list" id="seriesList"></div>
+
+<div class="empty" id="emptyHint">
+  まだCSVファイルが追加されていません
+</div>
+
+</section>
+
+<section class="card">
+
+<h2>② シリーズ情報を確認</h2>
+
+<div class="sub">
+シリーズID・表示名・弾バッジは必要に応じて変更してください。
+</div>
+
+<div class="actions">
+
+<button class="btn primary" id="generateBtn" disabled>
+  ✨ 2ファイルを生成する
+</button>
+
+<span class="summary" id="summaryLine"></span>
+
+</div>
+
+<div class="messages" id="messages"></div>
+
+</section>
+
+<section class="card" id="outputSection">
+
+<h2>③ 生成結果</h2>
+
+<div class="sub">
+cards_data.js と series_manifest.json をそれぞれダウンロードできます。
+</div>
+
+<div class="output-block">
+
+<h3>📦 cards_data.js</h3>
+
+<div class="actions" style="margin-top:0;margin-bottom:10px">
+
+<span class="summary" id="outputSummary"></span>
+
+<div style="margin-left:auto;display:flex;gap:10px">
+
+<button class="btn secondary" id="copyJsBtn">
+  📋 コピー
+</button>
+
+<button class="btn primary" id="downloadJsBtn">
+  💾 cards_data.js
+</button>
+
+</div>
+
+</div>
+
+<textarea
+  id="outputPreview"
+  readonly
+  spellcheck="false"
+></textarea>
+
+</div>
+
+<div class="output-block">
+
+<h3>📋 series_manifest.json</h3>
+
+<div class="actions" style="margin-top:0;margin-bottom:10px">
+
+<span class="summary" id="manifestSummary"></span>
+
+<div style="margin-left:auto;display:flex;gap:10px">
+
+<button class="btn secondary" id="copyManifestBtn">
+  📋 コピー
+</button>
+
+<button class="btn primary" id="downloadManifestBtn">
+  💾 series_manifest.json
+</button>
+
+</div>
+
+</div>
+
+<textarea
+  id="manifestPreview"
+  readonly
+  spellcheck="false"
+></textarea>
+
+</div>
+
+</section>
+
+</div>
+
+<script>
+
+const dropzone =
+  document.getElementById('dropzone');
+
+const fileInput =
+  document.getElementById('fileInput');
+
+const seriesList =
+  document.getElementById('seriesList');
+
+const emptyHint =
+  document.getElementById('emptyHint');
+
+const generateBtn =
+  document.getElementById('generateBtn');
+
+const summaryLine =
+  document.getElementById('summaryLine');
+
+const messagesEl =
+  document.getElementById('messages');
+
+const outputSection =
+  document.getElementById('outputSection');
+
+const outputPreview =
+  document.getElementById('outputPreview');
+
+const manifestPreview =
+  document.getElementById('manifestPreview');
+
+const outputSummary =
+  document.getElementById('outputSummary');
+
+const manifestSummary =
+  document.getElementById('manifestSummary');
+
+const copyJsBtn =
+  document.getElementById('copyJsBtn');
+
+const copyManifestBtn =
+  document.getElementById('copyManifestBtn');
+
+const downloadJsBtn =
+  document.getElementById('downloadJsBtn');
+
+const downloadManifestBtn =
+  document.getElementById('downloadManifestBtn');
+
+
+const RARITY_MAP = {
+  'ノーマル':'n',
+  'プレミアムレア':'pr',
+  'レア':'r',
+  'ミラクルコーデ':'mc',
+  'キャンペーン':'cp',
+  'パラレル':'p'
+};
+
+const TYPE_MAP = {
+  'キュート':'cute',
+  'クール':'cool',
+  'セクシー':'sexy',
+  'ポップ':'pop'
+};
+
+const CATEGORY_MAP = {
+  'トップス':'tops',
+  'ボトムス':'bottoms',
+  'シューズ':'shoes',
+  'トップス&ボトムス':'tops_bottoms',
+  'アクセサリー':'accessory'
+};
+
+const COLUMN_ALIASES = {
+  id:['カードID','ID','id'],
+  number:['カード番号','番号'],
+  image:['画像URL','image','URL'],
+  name:['名前','カード名','name'],
+  rarity:['レアリティ','rarity'],
+  type:['タイプ','type'],
+  category:['カテゴリ','category']
+};
+
+
+let entries = [];
+let uidCounter = 0;
+
+
+function esc(s){
+  return String(s ?? '').replace(
+    /[&<>"']/g,
+    c => ({
+      '&':'&amp;',
+      '<':'&lt;',
+      '>':'&gt;',
+      '"':'&quot;',
+      "'":'&#39;'
+    }[c])
+  );
+}
+
+
+function slug(name){
+
+  return name
+    .replace(/\.csv$/i,'')
+    .replace(/[^a-zA-Z0-9_]+/g,'_')
+    .replace(/^_+|_+$/g,'')
+    || ('series_' + (++uidCounter));
+
+}
+
+
+function nice(name){
+
+  return name
+    .replace(/\.csv$/i,'')
+    .replace(/[_-]+/g,' ');
+
+}
+
+
+function parseCSV(text){
+
+  if(text.charCodeAt(0) === 0xFEFF){
+    text = text.slice(1);
+  }
+
+  const rows = [];
+  let row = [];
+  let field = '';
+  let q = false;
+
+  for(let i=0;i<text.length;i++){
+
+    const c = text[i];
+
+    if(q){
+
+      if(c === '"'){
+
+        if(text[i+1] === '"'){
+          field += '"';
+          i++;
+        }else{
+          q = false;
+        }
+
+      }else{
+        field += c;
+      }
+
+    }else if(c === '"'){
+      q = true;
+
+    }else if(c === ','){
+      row.push(field);
+      field = '';
+
+    }else if(c === '\n'){
+
+      row.push(field);
+      field = '';
+      rows.push(row);
+      row = [];
+
+    }else if(c !== '\r'){
+      field += c;
+    }
+
+  }
+
+  if(field.length || row.length){
+    row.push(field);
+    rows.push(row);
+  }
+
+  return rows.filter(
+    r => !(r.length === 1 && r[0] === '')
+  );
+}
+
+
+function findCol(headers,aliases){
+
+  for(const a of aliases){
+
+    const i =
+      headers.findIndex(
+        h => h.trim() === a
+      );
+
+    if(i !== -1){
+      return i;
+    }
+
+  }
+
+  return -1;
+}
+
+
+function parseEntry(entry,text){
+
+  try{
+
+    const rows = parseCSV(text);
+
+    if(!rows.length){
+      throw new Error('CSVが空です');
+    }
+
+    const headers =
+      rows[0].map(x => x.trim());
+
+    entry.cols = {
+
+      id:
+        findCol(headers,COLUMN_ALIASES.id),
+
+      number:
+        findCol(headers,COLUMN_ALIASES.number),
+
+      image:
+        findCol(headers,COLUMN_ALIASES.image),
+
+      name:
+        findCol(headers,COLUMN_ALIASES.name),
+
+      rarity:
+        findCol(headers,COLUMN_ALIASES.rarity),
+
+      type:
+        findCol(headers,COLUMN_ALIASES.type),
+
+      category:
+        findCol(headers,COLUMN_ALIASES.category)
+
+    };
+
+    if(entry.cols.id === -1){
+      throw new Error(
+        '「カードID」列が見つかりません'
+      );
+    }
+
+    if(entry.cols.image === -1){
+      throw new Error(
+        '「画像URL」列が見つかりません'
+      );
+    }
+
+    entry.rows =
+      rows.slice(1)
+      .filter(r =>
+        r.some(c => c.trim() !== '')
+      );
+
+    entry.error = null;
+
+  }catch(e){
+
+    entry.rows = null;
+    entry.error = e.message;
+
+  }
+
+  render();
+  updateState();
+
+}
+
+
+function cell(e,row,key){
+
+  const i = e.cols?.[key];
+
+  return i === -1 || i === undefined
+    ? ''
+    : (row[i] || '').trim();
+
+}
+
+
+function analyze(e){
+
+  let missingId = 0;
+  let missingImage = 0;
+  let missingName = 0;
+  let unknownR = 0;
+  let unknownT = 0;
+  let unknownC = 0;
+
+  if(!e.rows){
+    return null;
+  }
+
+  e.rows.forEach(r => {
+
+    if(!cell(e,r,'id')){
+      missingId++;
+    }
+
+    if(!cell(e,r,'image')){
+      missingImage++;
+    }
+
+    if(!cell(e,r,'name')){
+      missingName++;
+    }
+
+    const rv = cell(e,r,'rarity');
+    const tv = cell(e,r,'type');
+    const cv = cell(e,r,'category');
+
+    if(rv && !RARITY_MAP[rv]){
+      unknownR++;
+    }
+
+    if(tv && !TYPE_MAP[tv]){
+      unknownT++;
+    }
+
+    if(cv && !CATEGORY_MAP[cv]){
+      unknownC++;
+    }
+
+  });
+
+  return {
+    total:e.rows.length,
+    missingId,
+    missingImage,
+    missingName,
+    unknownR,
+    unknownT,
+    unknownC
+  };
+
+}
+
+
+function render(){
+
+  seriesList.innerHTML = '';
+
+  emptyHint.style.display =
+    entries.length ? 'none' : 'block';
+
+
+  entries.forEach(e => {
+
+    let status =
+      '<span class="status warn">読み込み中…</span>';
+
+    if(e.error){
+
+      status =
+        '<span class="status err">✕ 読み込みエラー</span>';
+
+    }else if(e.rows){
+
+      const a = analyze(e);
+
+      status =
+        (a.missingId || a.missingImage)
+        ? `<span class="status warn">⚠ ${a.total}枚（一部不足）</span>`
+        : `<span class="status ok">✓ ${a.total}枚</span>`;
+
+    }
+
+
+    const row =
+      document.createElement('div');
+
+    row.className = 'series-row';
+
+
+    row.innerHTML = `
+
+      <div>
+        <label>シリーズID</label>
+        <input
+          type="text"
+          data-field="id"
+          value="${esc(e.id)}"
+        >
+      </div>
+
+      <div>
+        <label>表示名</label>
+        <input
+          type="text"
+          data-field="name"
+          value="${esc(e.name)}"
+        >
+      </div>
+
+      <div>
+        <label>弾バッジ</label>
+        <input
+          type="text"
+          data-field="badge"
+          value="${esc(e.badge)}"
+          placeholder="例: 1弾"
+        >
+      </div>
+
+      <div class="row-actions">
+
+        ${status}
+
+        <button
+          class="remove"
+          title="削除"
+        >
+          ✕
+        </button>
+
+      </div>
+
+      <div class="file-name">
+        📄 ${esc(e.fileName)}
+
+        ${
+          e.error
+          ? `<br>
+             <span style="color:#c0392b">
+               ${esc(e.error)}
+             </span>`
+          : ''
+        }
+
+      </div>
+    `;
+
+
+    row.querySelectorAll('input')
+      .forEach(inp => {
+
+        inp.addEventListener(
+          'input',
+          () => {
+
+            e[inp.dataset.field] =
+              inp.value;
+
+            updateState();
+
+          }
+        );
+
+      });
+
+
+    row.querySelector('.remove')
+      .addEventListener(
+        'click',
+        () => {
+
+          entries =
+            entries.filter(
+              x => x.uid !== e.uid
+            );
+
+          render();
+          updateState();
+
+        }
+      );
+
+
+    seriesList.appendChild(row);
+
+  });
+
+}
+
+
+function addFiles(files){
+
+  Array.from(files)
+    .filter(
+      f =>
+        /\.csv$/i.test(f.name)
+        || f.type === 'text/csv'
+    )
+    .forEach(file => {
+
+      const e = {
+
+        uid:++uidCounter,
+
+        fileName:file.name,
+
+        id:slug(file.name),
+
+        name:nice(file.name),
+
+        badge:'',
+
+        rows:null,
+
+        error:null,
+
+        cols:null
+
+      };
+
+
+      entries.push(e);
+
+      render();
+
+
+      const reader =
+        new FileReader();
+
+
+      reader.onload = ev =>
+        parseEntry(
+          e,
+          ev.target.result
+        );
+
+
+      reader.onerror = () => {
+
+        e.error =
+          'ファイルの読み込みに失敗しました';
+
+        render();
+        updateState();
+
+      };
+
+
+      reader.readAsText(
+        file,
+        'utf-8'
+      );
+
+    });
+
+}
+
+
+function validate(){
+
+  const msgs = [];
+
+  const valid =
+    entries.filter(
+      e => e.rows && !e.error
+    );
+
+
+  if(!entries.length){
+    return {
+      ok:false,
+      msgs,
+      valid
+    };
+  }
+
+
+  entries.forEach(e => {
+
+    if(e.error){
+
+      msgs.push({
+        type:'err',
+        text:`「${e.fileName}」: ${e.error}`
+      });
+
+    }
+
+  });
+
+
+  const ids = {};
+
+
+  valid.forEach(e => {
+
+    const id = e.id.trim();
+
+    ids[id] = (ids[id] || 0) + 1;
+
+
+    if(!id){
+
+      msgs.push({
+        type:'err',
+        text:`「${e.fileName}」: シリーズIDが空です`
+      });
+
+    }else if(!/^[a-zA-Z0-9_]+$/.test(id)){
+
+      msgs.push({
+        type:'err',
+        text:
+          `「${e.fileName}」: シリーズID「${id}」に使えない文字があります`
+      });
+
+    }
+
+
+    const a = analyze(e);
+
+
+    if(a.missingId){
+
+      msgs.push({
+        type:'warn',
+        text:
+          `「${e.fileName}」: id が無いカードが${a.missingId}枚あります`
+      });
+
+    }
+
+
+    if(a.missingImage){
+
+      msgs.push({
+        type:'warn',
+        text:
+          `「${e.fileName}」: image が無いカードが${a.missingImage}枚あります`
+      });
+
+    }
+
+
+    if(a.missingName){
+
+      msgs.push({
+        type:'warn',
+        text:
+          `「${e.fileName}」: name が無いカードが${a.missingName}枚あります（idを代用します）`
+      });
+
+    }
+
+
+    if(a.unknownR){
+
+      msgs.push({
+        type:'warn',
+        text:
+          `「${e.fileName}」: 未対応のレアリティが${a.unknownR}件あります`
+      });
+
+    }
+
+
+    if(a.unknownT){
+
+      msgs.push({
+        type:'warn',
+        text:
+          `「${e.fileName}」: 未対応のタイプが${a.unknownT}件あります`
+      });
+
+    }
+
+
+    if(a.unknownC){
+
+      msgs.push({
+        type:'warn',
+        text:
+          `「${e.fileName}」: 未対応のカテゴリが${a.unknownC}件あります`
+      });
+
+    }
+
+  });
+
+
+  Object.entries(ids)
+    .forEach(([id,n]) => {
+
+      if(id && n > 1){
+
+        msgs.push({
+          type:'err',
+          text:
+            `シリーズID「${id}」が${n}件重複しています`
+        });
+
+      }
+
+    });
+
+
+  return {
+    ok:
+      valid.length > 0
+      && !msgs.some(
+        m => m.type === 'err'
+      ),
+
+    msgs,
+    valid
+
+  };
+
+}
+
+
+function updateState(){
+
+  const v = validate();
+
+
+  messagesEl.innerHTML =
+    v.msgs.map(m =>
+      `<div class="msg ${m.type}">
+        ${m.type === 'err' ? '✕' : '⚠'}
+        ${esc(m.text)}
+      </div>`
+    ).join('');
+
+
+  generateBtn.disabled = !v.ok;
+
+
+  if(v.valid.length){
+
+    const total =
+      v.valid.reduce(
+        (s,e) => s + e.rows.length,
+        0
+      );
+
+    summaryLine.innerHTML =
+      `<strong>${v.valid.length}</strong> シリーズ・<strong>${total}</strong> 枚`;
+
+  }else{
+
+    summaryLine.textContent = '';
+
+  }
+
+}
+
+
+function makeCards(e){
+
+  return e.rows.map(r => {
+
+    const id =
+      cell(e,r,'id');
+
+    const name =
+      cell(e,r,'name') || id;
+
+    const image =
+      cell(e,r,'image');
+
+
+    const c = {
+      id,
+      name,
+      image
+    };
+
+
+    const rv =
+      cell(e,r,'rarity');
+
+    const tv =
+      cell(e,r,'type');
+
+    const cv =
+      cell(e,r,'category');
+
+
+    if(rv && RARITY_MAP[rv]){
+      c.rarity =
+        RARITY_MAP[rv];
+    }
+
+    if(tv && TYPE_MAP[tv]){
+      c.type =
+        TYPE_MAP[tv];
+    }
+
+    if(cv && CATEGORY_MAP[cv]){
+      c.category =
+        CATEGORY_MAP[cv];
+    }
+
+
+    return c;
+
+  });
+
+}
+
+
+/* ------------------------------
+   cards_data.js
+-------------------------------- */
+
+function buildCardsData(valid){
+
+  const config =
+    valid.map(e => ({
+      id:e.id.trim(),
+      name:e.name.trim(),
+      badge:(e.badge || '').trim(),
+      cards:makeCards(e)
+    }));
+
+
+  const header =
+`// Embedded card data — generated directly from CSV
+// No intermediate JSON file is required.
+// Auto-generated on ${new Date().toISOString().slice(0,10)}
+
+`;
+
+
+  return (
+    header +
+    'window.AIKATSU_SERIES_CONFIG = ' +
+    JSON.stringify(config,null,2) +
+    ';\n'
+  );
+
+}
+
+
+/* ------------------------------
+   series_manifest.json
+-------------------------------- */
+
+function buildManifest(valid){
+
+  /*
+   * index(2).html は
+   *
+   * if (series.cards && Array.isArray(series.cards))
+   *
+   * を最初に確認するため、
+   * manifest側にもcardsを持たせる。
+   *
+   * これにより、manifest単体でも動作可能。
+   */
+
+  return valid.map(e => ({
+
+    id:e.id.trim(),
+
+    name:e.name.trim(),
+
+    badge:(e.badge || '').trim(),
+
+    cards:makeCards(e)
+
+  }));
+
+}
+
+
+function downloadText(filename,text,type){
+
+  const blob =
+    new Blob(
+      [text],
+      {type}
+    );
+
+  const url =
+    URL.createObjectURL(blob);
+
+  const a =
+    document.createElement('a');
+
+  a.href = url;
+  a.download = filename;
+
+  document.body.appendChild(a);
+
+  a.click();
+
+  a.remove();
+
+  setTimeout(
+    () => URL.revokeObjectURL(url),
+    1000
+  );
+
+}
+
+
+generateBtn.addEventListener(
+  'click',
+  () => {
+
+    const v = validate();
+
+    if(!v.ok){
+      return;
+    }
+
+
+    const js =
+      buildCardsData(v.valid);
+
+
+    const manifest =
+      JSON.stringify(
+        buildManifest(v.valid),
+        null,
+        2
+      ) + '\n';
+
+
+    outputPreview.value =
+      js;
+
+
+    manifestPreview.value =
+      manifest;
+
+
+    const total =
+      v.valid.reduce(
+        (s,e) => s + e.rows.length,
+        0
+      );
+
+
+    outputSummary.innerHTML =
+      `<strong>${v.valid.length}</strong> シリーズ・<strong>${total}</strong> 枚・約 <strong>${Math.round(js.length / 1024)}</strong> KB`;
+
+
+    manifestSummary.innerHTML =
+      `<strong>${v.valid.length}</strong> シリーズ・約 <strong>${Math.round(manifest.length / 1024)}</strong> KB`;
+
+
+    outputSection.style.display =
+      'block';
+
+
+    outputSection.scrollIntoView({
+      behavior:'smooth',
+      block:'start'
+    });
+
+  }
+);
+
+
+/* ------------------------------
+   Copy
+-------------------------------- */
+
+async function copyText(text,button,defaultText){
+
+  try{
+
+    await navigator.clipboard.writeText(text);
+
+  }catch(e){
+
+    const textarea =
+      document.createElement('textarea');
+
+    textarea.value = text;
+
+    document.body.appendChild(textarea);
+
+    textarea.select();
+
+    document.execCommand('copy');
+
+    textarea.remove();
+
+  }
+
+
+  button.textContent =
+    '✓ コピーしました';
+
+
+  setTimeout(
+    () =>
+      button.textContent = defaultText,
+    1600
+  );
+
+}
+
+
+copyJsBtn.addEventListener(
+  'click',
+  () =>
+    copyText(
+      outputPreview.value,
+      copyJsBtn,
+      '📋 コピー'
+    )
+);
+
+
+copyManifestBtn.addEventListener(
+  'click',
+  () =>
+    copyText(
+      manifestPreview.value,
+      copyManifestBtn,
+      '📋 コピー'
+    )
+);
+
+
+/* ------------------------------
+   Download
+-------------------------------- */
+
+downloadJsBtn.addEventListener(
+  'click',
+  () => {
+
+    downloadText(
+      'cards_data.js',
+      outputPreview.value,
+      'text/javascript;charset=utf-8'
+    );
+
+  }
+);
+
+
+downloadManifestBtn.addEventListener(
+  'click',
+  () => {
+
+    downloadText(
+      'series_manifest.json',
+      manifestPreview.value,
+      'application/json;charset=utf-8'
+    );
+
+  }
+);
+
+
+/* ------------------------------
+   File input
+-------------------------------- */
+
+dropzone.addEventListener(
+  'click',
+  () =>
+    fileInput.click()
+);
+
+
+fileInput.addEventListener(
+  'change',
+  e => {
+
+    addFiles(
+      e.target.files
+    );
+
+    fileInput.value = '';
+
+  }
+);
+
+
+['dragenter','dragover']
+.forEach(x =>
+  dropzone.addEventListener(
+    x,
+    e => {
+
+      e.preventDefault();
+
+      dropzone.classList.add(
+        'dragover'
+      );
+
+    }
+  )
+);
+
+
+['dragleave','drop']
+.forEach(x =>
+  dropzone.addEventListener(
+    x,
+    e => {
+
+      e.preventDefault();
+
+      dropzone.classList.remove(
+        'dragover'
+      );
+
+    }
+  )
+);
+
+
+dropzone.addEventListener(
+  'drop',
+  e =>
+    addFiles(
+      e.dataTransfer.files
+    )
+);
+
+
+updateState();
+
+</script>
+
+</body>
+</html>
